@@ -147,7 +147,7 @@ A speed analysis of different relevant operations gave the following results:
   </tr>
 </table>
 
-The fastest was to extract part of a matrix is to use slices (ideally reusing a precomputed `slice` object). However, this does not allow to reorganize the order of the column, which is necessary when trying permutations of characters for a given set of keys.
+The fastest way to extract part of a matrix is to use slices (ideally reusing a precomputed `slice` object). However, this does not allow to reorganize the order of the column, which is necessary when trying permutations of characters for a given set of keys.
 While one could consider to extract the matrix with the relevant rows and columns, then go through all permutations by swapping 1 row and 1 column between each case[^swap-permutation], swapping rows and columns in such a matrix proved to be slower than just using indices.
 
 [^swap-permutation]: It is indeed possible to reach all permutation on a set of elements by operating a single swap of two of its element between each permutation.
@@ -162,7 +162,7 @@ Regarding the operations on the reduced matrices: while operations on vectors (1
 # Structure
 
 - Support different scoring strategies, different layouts, different alphabets
-	- .score() is implemented by a subclass
+	- `.score()` is implemented by a subclass
 	- layout data is fed to or built by implementation subclass
 	- alphabet is fed (top class)
 - Optimal fill = top class
@@ -174,19 +174,37 @@ class LayoutBuilder {
 	+characters?: list~str~
 	+layout: list~int~
 	+optimal_fill(keys: list~int~, chars: list~int~, remap: bool)
-	+score(): int
+	+score()
 }
 
-Interface <|.. Class : implémente
-Class <|-- SubClass : hérite\n(est)
-Class <.. Package : utilise
-Group o-- Things : constitue
-Group *-- Items : constitue &\ndépend de
+class MatrixBasedLayoutBuilder {
+  TBD: 1D costs & frequencies
+  TBD: 2D costs & frequencies
+  +score()
+}
+
+class EngramLayoutBuilder {
+  —
+}
+
+LayoutBuilder <|-- MatrixBasedLayoutBuilder
+MatrixBasedLayoutBuilder <|-- EngramLayoutBuilder: ?
+LayoutBuilder <|-- EngramLayoutBuilder: ?
 ```
 
 ```mermaid
-graph
+graph LR
 score --> optimal_fill
+key_costs --> k_prod
+char_freqs --> k_prod((×))
+interkey_costs --> ik_prod
+bigram_freqs --> ik_prod((×))
+k_prod --> score
+ik_prod --> score
+kb_geo([Keyboard geometry]) --> key_costs
+kb_geo([Keyboard geometry]) --> interkey_costs
+lang([Language data]) --> char_freqs
+lang([Language data]) --> bigram_freqs
 ```
 
 
@@ -236,26 +254,4 @@ make_seeds -.-> seed__([…]) -........-> keys24__([…]) -.-> end_sel
 
 end_sel --> end24([24-key config.])
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
