@@ -1,32 +1,47 @@
 from typing import Callable, Any, Literal
 import time
 import re
-
+import warnings # hack
 
 class Benchmark:
 	sets_per_test: int
 	runs_per_set: int
+	setup_once: bool
 	__functions: list[Callable[[], Any]]
 	__cases: dict[str : Callable[[], None]]
 	__times_ns: dict[str, list[int]] | None
 
 	def __init__(self, sets_per_test: int = 100, runs_per_set: int = 100) -> None:
-		# TODO DOCSTRING
+		"""
+		Create a Benchmark object that would run each one of the tested functions or commands
+		`runs_per_set` times (default: `100`), `sets_per_test` times (default: `100`).
+		"""
 		self.sets_per_test = int(sets_per_test)
 		self.runs_per_set = int(runs_per_set)
+		self.setup_once = True
 		self.__functions = []
 		self.__cases = {}
 		self.__reset_times()
 
 	def set_functions(self, functions: list[Callable[[], Any] | str]):
-		# TODO DOCSTRING
+		"""
+		Set the list of functions to be run and timed by the Benchmark object.
+		Those functions must take no argument.
+		Alternatively, strings can be provided in lieu of functions, in which case
+		what is measured is the time to execute the evaluated string.
+		"""
 		self.__reset_times()
 		self.__functions = []
 		for f in functions:
 			self.add_function(f)
 
 	def add_function(self, fun: Callable[[], Any] | str):
-		# TODO DOCSTRING
+		"""
+		Add a function to the list of functions to be run and timed by the Benchmark object.
+		This functions must take no argument.
+		Alternatively, a string can be provided instead of a function, in which case
+		what is measured is the time to execute the evaluated string.
+		"""
 		if isinstance(fun, str):
 			code = fun
 			fun = eval("lambda: " + code)
@@ -35,14 +50,32 @@ class Benchmark:
 		self.__functions.append(fun)
 
 	def set_cases(self, cases: dict[str, Callable[[], None] | str]):
-		# TODO DOCSTRING
+		"""
+		Set cases for which the target functions or commands must be timed.
+		Each case is defined by a name (its key in the dictionary provided as argument),
+		and a setup function taking no argument (the attached value).
+		This setup function is typically used to setup global variables that are used
+		in the target functions or commands.\n
+		By default, the setup function is run only once before running all functions many times.
+		In order to run it every time before running a test function, set the attribute
+		`.setup_once` to `False`.
+		"""
 		self.__reset_times()
 		self.__cases = {}
 		for name, setup in cases.items():
 			self.add_case(name, setup)
 
 	def add_case(self, case_name: str, case_setup: Callable[[], None] | str):
-		# TODO DOCSTRING
+		"""
+		Add a case for which the target functions or commands must be timed.
+		The case is defined by a name (`case_name`),
+		and a setup function taking no argument (`case_setup`).
+		This setup function is typically used to setup global variables that are used
+		in the target functions or commands.\n
+		By default, the setup function is run only once before running all functions many times.
+		In order to run it every time before running a test function, set the attribute
+		`.setup_once` to `False`.
+		"""
 		if case_name in self.__cases:
 			raise KeyError(f"Case name “{case_name}” already in use.")
 		if isinstance(case_setup, str):
@@ -51,12 +84,18 @@ class Benchmark:
 		self.__cases[case_name] = case_setup
 
 	def run(self) -> None:
-		self.__ensure_case()
-		self.__times_ns = {}
+		"""
+		Run and time the target functions and/or commands, for each target case (if relevant).
+		"""
+		self.__init_run()
 		for case, setup in self.__cases.items():
 			times_ns = [0] * len(self.__functions)
 			self.__times_ns[case] = times_ns
-			setup()
+			if self.setup_once:
+				setup()
+				self.__run_functions_without_setup(times_ns)
+			else:
+				self.__run_functions_with_setup(times_ns, setup)
 			for _ in range(self.sets_per_test):
 				for i, f in enumerate(self.__functions):
 					t = time.time_ns()
@@ -64,13 +103,47 @@ class Benchmark:
 						f()
 					t = time.time_ns() - t
 					times_ns[i] += t
+	
+	def __init_run(self) -> None:
+		self.__ensure_case()
+		self.__times_ns = {}
+		self.warned = False  # hack
+	
+	def __run_functions_without_setup(self, times_ns: list[int]) -> None:
+		for _ in range(self.sets_per_test):
+			for i, f in enumerate(self.__functions):
+				t = time.time_ns()
+				for _ in range(self.runs_per_set):
+					f()
+				t = time.time_ns() - t
+				times_ns[i] += t
 
+	def __run_functions_with_setup(self, times_ns: list[int], setup: Callable[[], None]) -> None:
+		if not self.warned:  # hack
+			warnings.warn("Case setup times are included in the results.")  # hack
+			self.warned = True  # hack
+		for _ in range(self.sets_per_test):
+			for i, f in enumerate(self.__functions):
+				t = time.time_ns()
+				for _ in range(self.runs_per_set):
+					setup()
+					f()
+				t = time.time_ns() - t
+				times_ns[i] += t
+	
 	def report(
 		self,
 		normalize_with: Literal["min", "max"] | int | None = None,
 		use_doc_as_name: bool = False,
 	) -> None:
-		# TODO DOCSTRING
+		"""
+		Report the run times in the terminal.
+		- `normalize_with`: If not `None`, the results are normalized by dividing them by:
+			- The time for the *n*-th function/command `normalize_with` is an integer *n*.
+			- The smallest time (on a case-by-case basis) if `normalize_with = "min"`.
+			- The largest time (on a case-by-case basis) if `normalize_with = "max"`.
+		- `use_doc_as_name`: Use the docstring of the function (if any) to designate it.
+		"""
 		self.__ensure_run()
 		lines = []
 		if self.__has_cases():
@@ -93,7 +166,14 @@ class Benchmark:
 		normalize_with: Literal["min", "max"] | int | None = None,
 		use_doc_as_name: bool = False,
 	):
-		# TODO DOCSTRING
+		"""
+		Report the run times as an html table.
+		- `normalize_with`: If not `None`, the results are normalized by dividing them by:
+			- The time for the *n*-th function/command `normalize_with` is an integer *n*.
+			- The smallest time (on a case-by-case basis) if `normalize_with = "min"`.
+			- The largest time (on a case-by-case basis) if `normalize_with = "max"`.
+		- `use_doc_as_name`: Use the docstring of the function (if any) to designate it.
+		"""
 		self.__ensure_run()
 		lines = []
 		n_total = self.sets_per_test * self.runs_per_set
@@ -197,160 +277,3 @@ class Benchmark:
 		return s
 
 
-if __name__ == "__main__":
-
-	import numpy as np
-
-	n = 26
-	x = np.random.rand(n, n)
-
-	i_sl = None
-	i_list = None
-	i_tuple = None
-	i_np = None
-	i_bool = None
-	i_bool_np = None
-	i_bool2D = None
-
-	def setup_case(k):
-		global sub_n, i_sl, i_list, i_tuple, i_np, i_bool, i_bool_np, i_bool2D, x_2d, x_2d_, x_1d, x_1d_
-		sub_n = k
-		i_sl = slice(k)
-		i_list = list(range(k))
-		i_tuple = tuple(i_list)
-		i_np = np.array(i_list)
-		i_bool = [True] * k + [False] * (n - k)
-		i_bool_np = np.array(i_bool)
-		i_bool2D = np.full(x.shape, False)
-		i_bool2D[i_sl, i_sl] = True
-		x_2d = x[i_sl, :][:, i_sl]
-		x_2d_ = x_2d + .1
-		x_1d = x[i_bool2D]
-		x_1d_ = x_1d + .1
-
-	def sel_sl_raw():
-		"""`m[:n, :][:, :n]` with `n: int`"""
-		global x, sub_n
-		x[:sub_n, :][:, :sub_n]
-
-	def sel_sl():
-		"""`m[i, :][:, i]` with `i: slice`"""
-		global x, i_sl
-		x[i_sl, :][:, i_sl]
-
-	def sel_list():
-		"""`m[i, :][:, i]` with `i: list[int]`"""
-		global x, i_list
-		x[i_list, :][:, i_list]
-
-	def sel_tuple():
-		"""`m[i, :][:, i]` with `i: tuple[int]`"""
-		global x, i_tuple
-		x[i_tuple, :][:, i_tuple]
-
-	def sel_np():
-		"""`m[i, :][:, i]` with `i: NpVector[int]`"""
-		global x, i_np
-		x[i_np, :][:, i_np]
-
-	def sel_np_list():
-		"""with `i: tuple[int]` converted to `NpVector[int]`"""
-		global x, i_tuple
-		i = np.array(i_tuple)
-		x[i, :][:, i]
-
-	def sel_bool():
-		"""`m[i, :][:, i]` with `i: list[bool]`"""
-		global x, i_bool
-		x[i_bool, :][:, i_bool]
-
-	def sel_bool_np():
-		"""`m[i, :][:, i]` with `i: NpVector[bool]`"""
-		global x, i_bool_np
-		x[i_bool_np, :][:, i_bool_np]
-
-	def sel_bool2D():
-		"""`m[i]` with `i: NpArray2D[bool]`"""
-		global x, i_bool2D
-		x[i_bool2D]
-
-	def prod_2d():
-		"""`m * M` with `m,M: NpArray2D[float]`"""
-		global x_2d, x_2d_
-		x_2d * x_2d_
-
-	def prod_1d():
-		"""`m * M` with `m,M: NpVector[float]`"""
-		global x_1d, x_1d_
-		x_1d * x_1d_
-
-	def sum_2d():
-		"""`np.sum(m)` with `m: NpArray2D[float]`"""
-		global x_2d
-		np.sum(x_2d)
-
-	def sum_1d():
-		"""`np.sum(m)` with `m: NpVector[float]`"""
-		global x_1d
-		np.sum(x_1d)
-
-	def flatten():
-		"""`np.flatten(m)` with `m: NpArray2D[float]`"""
-		global x_2d
-		x_2d.flatten()
-
-	def sum_prod():
-		"""`np.sum( m * M )` with `m,M: NpArray2D[float]`"""
-		global x_2d, x_2d_
-		np.sum(x_2d * x_2d_)
-
-	def sum_prod_flattened():
-		"""`np.sum( m.flatten() * M.flatten() )`"""
-		global x_2d, x_2d_
-		np.sum(x_2d.flatten() * x_2d_.flatten())
-
-	swap_idx = np.array([2,3])
-	swap_idx_ = np.array([3,2])
-	def swap2_2D():
-		"""Swap 2 indices in a `NpArray2D[float]`"""
-		global x_2d, swap_idx, swap_idx_
-		x_2d[swap_idx,:] = x_2d[swap_idx_,:]
-		x_2d[:,swap_idx] = x_2d[:,swap_idx_]
-
-
-	def numpize_1D():
-		"""Convert a `list[int]` into a `Vector[int]`"""
-		global x_2d, i_list
-		np.array(i_list)
-
-	def swap2_1D():
-		"""Swap 2 indices in a `Vector[int]`"""
-		global x_2d, i_np
-		i_np[(5,3),] = i_np[(3,5),]
-
-	bm = Benchmark(sets_per_test=1000, runs_per_set=1000)
-	bm.set_functions([
-			sel_sl_raw,
-			sel_sl,
-			sel_list,
-			sel_tuple,
-			sel_np,
-			sel_np_list,
-			sel_bool,
-			sel_bool_np,
-			sel_bool2D,
-			prod_1d,
-			prod_2d,
-			sum_1d,
-			sum_2d,
-			flatten,
-			sum_prod,
-			sum_prod_flattened,
-			swap2_2D,
-			numpize_1D,
-			swap2_1D,
-	])
-	bm.set_cases(dict((f"n = {k}", eval(f"lambda: setup_case({k})")) for k in [8,16,24]))
-	print()
-	bm.report_html(normalize_with=1, use_doc_as_name=True)
-	print()
