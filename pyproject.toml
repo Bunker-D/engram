@@ -1,0 +1,14 @@
+[project]
+name = "fast-engram"
+version = "0.0.1"
+authors = [{ name = "Bunker D", email = "contact@bunkerd.fr" }]
+readme = "README.md"
+
+
+dependencies = ["numpy"]
+optional-dependencies = { dev = ["black-with-tabs", "pytest", "pytest-dparam"] }
+
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
