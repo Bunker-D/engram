@@ -169,6 +169,15 @@ Regarding the operations on the reduced matrices: while operations on vectors (1
 
 Fundamentally, `LayoutBuilder` and `MatrixBasedLayoutBuilder` don't need the list of characters. And the number of characters and keys do not need to match — and so the cost matrices and frequency matrices don't need to have matching sizes. However, all cost matrices must have matching size. Same for frequency matrices.
 
+## `MatrixBasedLayoutBuilder`
+
+> [!TIP]
+> *Why the possibility to have different bigram frequencies?*
+> 
+> Let say you want to integrate to the scoring the times where letters are typed after each other but separated by a space (for example *o*→*b* when typing “foo bar”). Those “skip-grams” would come with their specific costs/scores, but also their specific frequencies.
+
+Why flexibility? 
+
 ```mermaid
 classDiagram
 

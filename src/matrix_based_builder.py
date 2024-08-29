@@ -18,6 +18,9 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 		key_costs: NpVector | NpArray1D | list[float],
 		char_frequencies: NpVector | NpArray1D | list[float],
 	):
+		"""
+		Add a key costs matrix and its associated character frequencies.
+		"""
 		key_costs = self.__as_vector(key_costs)
 		char_frequencies = self.__as_vector(char_frequencies)
 		self.__add_to_data(self._costs_freqs_1d, key_costs, char_frequencies)
@@ -28,6 +31,9 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 		interkey_costs: NpArray2D | list[list[float]],
 		char_pair_frequencies: NpArray2D | list[list[float]],
 	):
+		"""
+		Add an interkey costs matrix and its associated bigram frequencies.
+		"""
 		interkey_costs = self.__as_array(interkey_costs)
 		char_pair_frequencies = self.__as_array(char_pair_frequencies)
 		self.__add_to_data(self._costs_freqs_2d, interkey_costs, char_pair_frequencies)
