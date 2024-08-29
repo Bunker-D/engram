@@ -1,5 +1,5 @@
 [project]
-name = "fast-engram"
+name = "engram"
 version = "0.0.1"
 authors = [{ name = "Bunker D", email = "contact@bunkerd.fr" }]
 readme = "README.md"

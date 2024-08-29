@@ -167,6 +167,8 @@ Regarding the operations on the reduced matrices: while operations on vectors (1
 	- alphabet is fed (top class)
 - Optimal fill = top class
 
+Fundamentally, `LayoutBuilder` and `MatrixBasedLayoutBuilder` don't need the list of characters. And the number of characters and keys do not need to match — and so the cost matrices and frequency matrices don't need to have matching sizes. However, all cost matrices must have matching size. Same for frequency matrices.
+
 ```mermaid
 classDiagram
 
