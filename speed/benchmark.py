@@ -10,6 +10,7 @@ class Benchmark:
 	__functions: list[Callable[[], Any]]
 	__cases: dict[str : Callable[[], None]]
 	__times_ns: dict[str, list[int]] | None
+	__n_sets: int
 
 	def __init__(self, sets_per_test: int = 100, runs_per_set: int = 100) -> None:
 		"""
@@ -96,13 +97,6 @@ class Benchmark:
 				self.__run_functions_without_setup(times_ns)
 			else:
 				self.__run_functions_with_setup(times_ns, setup)
-			for _ in range(self.sets_per_test):
-				for i, f in enumerate(self.__functions):
-					t = time.time_ns()
-					for _ in range(self.runs_per_set):
-						f()
-					t = time.time_ns() - t
-					times_ns[i] += t
 	
 	def __init_run(self) -> None:
 		self.__ensure_case()
