@@ -182,6 +182,6 @@ if __name__ == "__main__":
 		dict((f"n = {k}", eval(f"lambda: setup_case({k})")) for k in [8, 16, 24])
 	)
 	print()
-	bm.report(use_doc_as_name=True)
-	# bm.report_html(normalize_with=1, use_doc_as_name=True)
+	# bm.report(use_doc_as_name=True)
+	bm.report_html(normalize_with=1, use_doc_as_name=True)
 	print()
