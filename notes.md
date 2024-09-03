@@ -224,7 +224,6 @@ lang([Language data]) --> char_freqs
 lang([Language data]) --> bigram_freqs
 ```
 
-
 ```mermaid
 graph TD
 root(( )) --> make_seeds[Build seeds:\n9 initial key assignments]
