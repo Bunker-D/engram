@@ -8,6 +8,11 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 	"""[(key costs, char frequencies), …]"""
 	_costs_freqs_2d: list[tuple[NpArray2D, NpArray2D]]
 	"""[(interkey costs, char pair frequencies), …]"""
+	# TODO ▲ split into _cost_<n>D and _freqs_<n>D
+
+	__costs_1d_current: NpVector
+	__costs_2d_current: NpArray2D
+	__fixed_chars: list[int]
 
 	def __init__(self):
 		self._costs_freqs_1d = []
@@ -38,6 +43,10 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 		char_pair_frequencies = self.__as_array(char_pair_frequencies)
 		self.__add_to_data(self._costs_freqs_2d, interkey_costs, char_pair_frequencies)
 		self.__assert_compatible_sizes()
+
+	def score(self, open_chars_order: tuple[int, ...] = []) -> float:
+		self.__precompute_if_needed()
+		# TODO compute
 
 	@staticmethod
 	def __as_vector(data: NpVector | NpArray1D | list[float]) -> NpVector:
@@ -95,3 +104,14 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 				raise ValueError("Mismatch in cost matrix sizes.")
 			if freqs.shape != (n_freqs, n_freqs):
 				raise ValueError("Mismatch in frequency n_freqs sizes.")
+
+	def __precompute_if_needed(self) -> None:
+		if self._config_changed:
+			self.__precompute()
+			self._config_changed = False
+
+	def __precompute(self) -> None:
+		# TODO self.__costs_1d_current
+		# TODO self.__costs_2d_current
+		# TODO self.__fixed_chars
+		pass
