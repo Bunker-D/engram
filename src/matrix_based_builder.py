@@ -8,13 +8,13 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 	"""[(key costs, char frequencies), …]"""
 	_costs_freqs_2d: list[tuple[NpArray2D, NpArray2D]]
 	"""[(interkey costs, char pair frequencies), …]"""
-	# TODO ▲ split into _cost_<n>D and _freqs_<n>D
 
-	__costs_1d_current: NpVector
-	__costs_2d_current: NpArray2D
+	__costs_freqs_1d_current: list[tuple[NpVector, NpVector]]
+	__costs_freqs_2d_current: list[tuple[NpArray2D, NpArray2D]]
 	__fixed_chars: list[int]
 
 	def __init__(self):
+		super().__init__()
 		self._costs_freqs_1d = []
 		self._costs_freqs_2d = []
 
@@ -46,7 +46,13 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 
 	def score(self, open_chars_order: tuple[int, ...] = []) -> float:
 		self.__precompute_if_needed()
-		# TODO compute
+		score = 0
+		chars = self.__fixed_chars + list(open_chars_order)
+		for costs, freqs in self.__costs_freqs_1d_current:
+			score += np.sum(costs * freqs[chars])
+		for costs, freqs in self.__costs_freqs_2d_current:
+			score += np.sum(costs * freqs[chars, :][:, chars])
+		return score
 
 	@staticmethod
 	def __as_vector(data: NpVector | NpArray1D | list[float]) -> NpVector:
@@ -111,7 +117,11 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 			self._config_changed = False
 
 	def __precompute(self) -> None:
-		# TODO self.__costs_1d_current
-		# TODO self.__costs_2d_current
-		# TODO self.__fixed_chars
-		pass
+		keys = list(self._fixed.keys()) + self._opened_keys
+		self.__costs_freqs_1d_current = [
+			(costs[keys], freqs) for costs, freqs in self._costs_freqs_1d
+		]
+		self.__costs_freqs_2d_current = [
+			(costs[keys, :][:, keys], freqs) for costs, freqs in self._costs_freqs_2d
+		]
+		self.__fixed_chars = list(self._fixed.values())
