@@ -52,7 +52,7 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
 			score += np.sum(costs * freqs[chars])
 		for costs, freqs in self.__costs_freqs_2d_current:
 			score += np.sum(costs * freqs[chars, :][:, chars])
-		return score
+		return float(score)
 
 	@staticmethod
 	def __as_vector(data: NpVector | NpArray1D | list[float]) -> NpVector:
