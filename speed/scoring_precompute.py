@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
 from itertools import permutations
-import itertools
 from benchmark import Benchmark
 
 n = 4 * 8  # 26

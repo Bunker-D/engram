@@ -10,7 +10,6 @@ class Benchmark:
 	__functions: list[Callable[[], Any]]
 	__cases: dict[str : Callable[[], None]]
 	__times_ns: dict[str, list[int]] | None
-	__n_sets: int
 
 	def __init__(self, sets_per_test: int = 100, runs_per_set: int = 100) -> None:
 		"""
