@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Iterable
 from itertools import permutations
 
@@ -63,7 +64,8 @@ class LayoutBuilder:
         # TODO Is it needed? This would be a shorthand for various step, but is it really useful?
         raise NotImplementedError()
 
-    def score(self, open_chars_order: tuple[int, ...] = ()) -> float:
+    @abstractmethod
+    def score(self, open_chars_order: Iterable[int] = ()) -> float:
         """
         Score the provided layout.\n
         ⚠ This method must be implemented by a subclass.\n

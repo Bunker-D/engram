@@ -1,4 +1,4 @@
-from typing import Callable, Literal
+from typing import Callable, Iterable, Literal
 from layout_builder import LayoutBuilder
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -50,7 +50,7 @@ class MatrixBasedLayoutBuilder(LayoutBuilder):
         self.__add_to_costs(self._costs_freqs_2d, interkey_costs, char_pair_frequencies)
         self.__assert_compatible_sizes()
 
-    def score(self, open_chars_order: tuple[int, ...] = ()) -> float:
+    def score(self, open_chars_order: Iterable[int] = ()) -> float:
         self.__precompute_if_needed()
         score = 0
         chars = self.__fixed_chars + list(open_chars_order)

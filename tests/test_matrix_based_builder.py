@@ -64,10 +64,10 @@ class Test_add_key_costs:
 
     def test_store_successive_added_pairs(self):
         builder = MatrixBasedLayoutBuilder()
-        costs_0 = [1, 2, 3]
-        freqs_0 = [1, 2, 3, 4]
-        costs_1 = [10, 20, 30]
-        freqs_1 = [10, 20, 30, 40]
+        costs_0: list[float] = [1, 2, 3]
+        freqs_0: list[float] = [1, 2, 3, 4]
+        costs_1: list[float] = [10, 20, 30]
+        freqs_1: list[float] = [10, 20, 30, 40]
 
         builder.add_key_costs(costs_0, freqs_0)
         builder.add_key_costs(costs_1, freqs_1)
@@ -81,10 +81,10 @@ class Test_add_key_costs:
 
     def test_combine_when_same_costs(self):
         builder = MatrixBasedLayoutBuilder()
-        costs = [1, 2, 3]
-        freqs_0 = [1, 2, 3, 4]
-        freqs_1 = [10, 20, 30, 40]
-        freqs_total = [11, 22, 33, 44]
+        costs: list[float] = [1, 2, 3]
+        freqs_0: list[float] = [1, 2, 3, 4]
+        freqs_1: list[float] = [10, 20, 30, 40]
+        freqs_total: list[float] = [11, 22, 33, 44]
 
         builder.add_key_costs(costs, freqs_0)
         builder.add_key_costs(costs, freqs_1)
@@ -96,10 +96,10 @@ class Test_add_key_costs:
 
     def test_combine_when_same_freqs(self):
         builder = MatrixBasedLayoutBuilder()
-        freqs = [1, 2, 3, 4]
-        costs_0 = [1, 2, 3]
-        costs_1 = [10, 20, 30]
-        costs_total = [11, 22, 33]
+        freqs: list[float] = [1, 2, 3, 4]
+        costs_0: list[float] = [1, 2, 3]
+        costs_1: list[float] = [10, 20, 30]
+        costs_total: list[float] = [11, 22, 33]
 
         builder.add_key_costs(costs_1, freqs)
         builder.add_key_costs(costs_0, freqs)
@@ -250,10 +250,10 @@ class Test_add_interkey_costs:
 
     def test_store_successive_added_pairs(self):
         builder = MatrixBasedLayoutBuilder()
-        costs_0 = [[1, 2], [3, 4]]
-        freqs_0 = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-        costs_1 = [[10, 20], [30, 40]]
-        freqs_1 = [[10, 20, 30], [40, 50, 60], [70, 80, 90]]
+        costs_0: list[list[float]] = [[1, 2], [3, 4]]
+        freqs_0: list[list[float]] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        costs_1: list[list[float]] = [[10, 20], [30, 40]]
+        freqs_1: list[list[float]] = [[10, 20, 30], [40, 50, 60], [70, 80, 90]]
 
         builder.add_interkey_costs(costs_0, freqs_0)
         builder.add_interkey_costs(costs_1, freqs_1)
@@ -267,10 +267,10 @@ class Test_add_interkey_costs:
 
     def test_combine_when_same_costs(self):
         builder = MatrixBasedLayoutBuilder()
-        costs = [[1, 2], [3, 4]]
-        freqs_0 = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-        freqs_1 = [[10, 20, 30], [40, 50, 60], [70, 80, 90]]
-        freqs_total = [[11, 22, 33], [44, 55, 66], [77, 88, 99]]
+        costs: list[list[float]] = [[1, 2], [3, 4]]
+        freqs_0: list[list[float]] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        freqs_1: list[list[float]] = [[10, 20, 30], [40, 50, 60], [70, 80, 90]]
+        freqs_total: list[list[float]] = [[11, 22, 33], [44, 55, 66], [77, 88, 99]]
 
         builder.add_interkey_costs(costs, freqs_0)
         builder.add_interkey_costs(costs, freqs_1)
@@ -282,10 +282,10 @@ class Test_add_interkey_costs:
 
     def test_combine_when_same_freqs(self):
         builder = MatrixBasedLayoutBuilder()
-        freqs = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-        costs_0 = [[1, 2], [3, 4]]
-        costs_1 = [[10, 20], [30, 40]]
-        costs_total = [[11, 22], [33, 44]]
+        freqs: list[list[float]] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        costs_0: list[list[float]] = [[1, 2], [3, 4]]
+        costs_1: list[list[float]] = [[10, 20], [30, 40]]
+        costs_total: list[list[float]] = [[11, 22], [33, 44]]
 
         builder.add_interkey_costs(costs_1, freqs)
         builder.add_interkey_costs(costs_0, freqs)
@@ -405,11 +405,11 @@ class Test_add_interkey_costs:
 class Test_score:
     # Costs and frequency matrices
     # Expected scores when keys 0,1,5,3 are assigned chars 4,1,3,2
-    costs_1d_a = [100, 101, 102, 103, 104, 105]
-    freqs_1d_a = [200, 201, 202, 203, 204, 205]
-    costs_1d_b = [500, 501, 502, 503, 504, 505]
-    freqs_1d_b = [600, 601, 602, 603, 604, 605]
-    costs_2d_a = [
+    costs_1d_a: list[float] = [100, 101, 102, 103, 104, 105]
+    freqs_1d_a: list[float] = [200, 201, 202, 203, 204, 205]
+    costs_1d_b: list[float] = [500, 501, 502, 503, 504, 505]
+    freqs_1d_b: list[float] = [600, 601, 602, 603, 604, 605]
+    costs_2d_a: list[list[float]] = [
         [300, 301, 302, 303, 304, 305],
         [310, 311, 312, 313, 314, 315],
         [320, 321, 322, 323, 324, 325],
@@ -417,7 +417,7 @@ class Test_score:
         [340, 341, 342, 343, 344, 345],
         [350, 351, 352, 353, 354, 355],
     ]
-    freqs_2d_a = [
+    freqs_2d_a: list[list[float]] = [
         [400, 401, 402, 403, 404, 405],
         [410, 411, 412, 413, 414, 415],
         [420, 421, 422, 423, 424, 425],
@@ -425,7 +425,7 @@ class Test_score:
         [440, 441, 442, 443, 444, 445],
         [450, 451, 452, 453, 454, 455],
     ]
-    costs_2d_b = [
+    costs_2d_b: list[list[float]] = [
         [700, 701, 702, 703, 704, 705],
         [710, 711, 712, 713, 714, 715],
         [720, 721, 722, 723, 724, 725],
@@ -433,7 +433,7 @@ class Test_score:
         [740, 741, 742, 743, 744, 745],
         [750, 751, 752, 753, 754, 755],
     ]
-    freqs_2d_b = [
+    freqs_2d_b: list[list[float]] = [
         [800, 801, 802, 803, 804, 805],
         [810, 811, 812, 813, 814, 815],
         [820, 821, 822, 823, 824, 825],
