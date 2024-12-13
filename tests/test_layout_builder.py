@@ -1,4 +1,3 @@
-from pytest_dparam import d_parametrize
 from layout_builder import LayoutBuilder
 from math import factorial
 

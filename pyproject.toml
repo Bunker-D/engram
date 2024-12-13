@@ -6,7 +6,8 @@ readme = "README.md"
 
 
 dependencies = ["numpy"]
-optional-dependencies = { dev = ["black-with-tabs", "pytest", "pytest-dparam"] }
+optional-dependencies = { dev = ["black", "pytest", "pytest-dparam"] }
+requires-python = ">= 3.12"
 
 
 [build-system]
