@@ -2,6 +2,8 @@ from abc import abstractmethod
 from typing import Iterable
 from itertools import permutations
 
+# TODO Should use injection for the scoring rather than inheritance
+
 
 class LayoutBuilder:
     _fixed: dict[int, int]

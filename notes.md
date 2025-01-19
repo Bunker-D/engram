@@ -3,6 +3,9 @@
 
 ## Matrix indexation
 
+> [!TIP]
+> Use Numpy vectors for the indices for Numpy matrices, even if it requires prior conversion into a vector.
+
 Because the algorithm compute scores for all possible permutations of typically 8 characters at a type, it is crucial to make the scoring method as fast as possible.
 
 When it relies on key and/or inter-key costs matrices and character and/or bigrams frequency matrices, the way the elements of those matrices are selected and organized have a significant impact on the matrix speed.
@@ -14,7 +17,7 @@ A speed analysis of different relevant operations gave the following results:
 </style>
 <table>
   <tr>
-    <th>Executing</th><th colspan="3">Execution in ms, for 1,000,000 executions<br>(ratio with <code>m[i, :][:, i]</code> with <code>i: slice</code>)</th>
+    <th>Executing</th><th colspan="3">Execution time in ms, for 1,000,000 executions<br>(ratio with <code>m[i, :][:, i]</code> with <code>i: slice</code>)</th>
   </tr>
   <tr>
     <th></th><th colspan="3">Extracting a <em>n</em>×<em>n</em> matrix from a 26×26 matrix</th>
@@ -181,8 +184,6 @@ Fundamentally, `LayoutBuilder` and `MatrixBasedLayoutBuilder` don't need the lis
 > *Why the possibility to have different bigram frequencies?*
 > 
 > Let say you want to integrate to the scoring the times where letters are typed after each other but separated by a space (for example *o*→*b* when typing “foo bar”). Those “skip-grams” would come with their specific costs/scores, but also their specific frequencies.
-
-Why flexibility? 
 
 ```mermaid
 classDiagram
@@ -405,3 +406,72 @@ $$
 At first glance, it seems that it would be faster to pre-compute some of it: the leftmost element $\left(\sum_{k\in\fKeys}\sum_{h\in\fKeys}…\right)$ is constant (for given sets of fixed and opened keys and characters), and for the center elements $\left(\sum_{k\in\fKeys}\sum_{h\in\vKeys}… + \sum_{k\in\vKeys}\sum_{h\in\fKeys}…\right)$, one can pre-compute the costs associated to assigning an opened character $j$ to an opened key $k$, then sum those costs for every assignments. However, this strategy proved to be not faster[^faster-no-split] than simply reducing and reorganizing the costs and frequency matrices at every score calculation.
 
 [^faster-no-split]: For relevant sizes of input data. Typically, this was tested with 8 open positions and 0, 8, 16 or 24 fixed key assignments. See `speed/scoring_precompute.py` for the tests.
+
+
+## Arno's Engram scoring
+
+Arno's Engram uses only interkey costs/scores, computed based on penalties:
+- $1$ is the base interkey score of each pair of key.
+- The interkey score is multiplied by a factor $< 1$ for every penalty that applies to it. It includes the key-based penalties for each key within the pair (e.g., using the pinky on an upper row), and interkey-based penalties (e.g., the same finger is used in both keys while those are different keys).
+- By default, the resulting interkey is multiplied by a strength score representing the strength of the fingers used. The strength scores are computed as the sum of the strength of each finger, then normalized (by default) to span from $0.9$ to $1$.
+
+The per-key penalties found in the code can be summed as:
+| Name | $G$ | Condition |
+|------|-----|-----------|
+| `lateral` | $1$ | Not on home column |
+| `not_home_row` | $0^{*}$ | Not on home column |
+| `side_top` | $0^{*}$ | Upper row for index or pinky |
+| `inside_top` | $0^{*}$ | Upper row for index |
+| forces factor | - | Finger's force |
+
+and the interkey penalties:
+| Name | $G$ | Condition |
+|------|-----|-----------|
+| `outward` | $1$ | Same hand & 2<sup>st</sup> finger more outside than 1<sup>st</sup> |
+| `same_hand` | $0^{*}$ | Same hand |
+| `skip_row_0away` | $4$ | Same hand & 2 rows apart & Same finger |
+| `skip_row_1away` | $5$ | Same hand & 2 rows apart & Neighboring fingers |
+| `skip_row_2away` | $3$ | Same hand & 2 rows apart & Fingers separated by 1 finger |
+| `skip_row_3away` | $1$ | Same hand & 2 rows apart & Index and pinky |
+| `same_finger` | $5$ | Same finger & Different keys |
+| `side_above_1away` | $3$ | Same hand & Index or pinky higher & Neighboring fingers |
+| `side_above_2away` | $2$ | Same hand & Index or pinky higher & Fingers separated by 1 finger |
+| `side_above_3away` | $1$ | Same hand & Index and pinky & Not on the same row |
+| `index_above` | $0^{*}$ | Index on the upper row & The other key is either on a different hand, or the same key, or not as high |
+| `middle_above_ring` | $1$ | Middle finger used higher than ring finger |
+| `ring_above_middle` | $3$ | Ring finger used higher than middle finger |
+| `shorter_above` | $0^{*}$ | Unclear… |
+
+where $G$ is the gravity, and the multiplicative penalty is then: $1^G$. Keep in mind that those penalties apply together. Typically, when `skip_row_0away` applies, then `same_finger` also applies, giving a combined gravity of $5+4=9$.
+
+The gravities $G$ provided in these tables are what matches the multiplicative penalties found in the code for Arno's Engram. (This code doesn't use this notion of gravity.) A gravity $G=0$ indicates that the penalty isn't used (the multiplicative penalty is set to $1$), typically because it is redundant with other, more accurate penalties.
+
+Some criticisms can be raised regarding the implementation of Arno's Engram:
+- Relying only on interkey costs or scores, rather than both key and interkey ones, implies that keys in the middle of the words matter at least twice as much[^norvig]. It is also questionable to multiply successive single-key penalties (which is what happens since penalties are multiplicative within the context of a given pair of keys).
+- Penalties were implemented by manually listing every key or pair of keys they apply to. Consequently, some mistakes were found. However, those do not affect the 24 keys vertically aligned with the home keys, and thus did not significantly affect the layout-building procedure (for a 26-letter layout)[^penalties-errors].
+- The values or gravities attributed to these penalties are arbitrary, and some can seem questionable[^questionable-penalties].
+- Regarding the inclusion of finger strength:
+  - The data used was the peak force measured by B. J. Martin et al., 1996[^martin96], rather than mean force measured and provided by the same source. This latter data seems more relevant.
+  - Normalizing the strength factors to span from $0.9$ to $1$ seems unnecessary and unjustified. Of note however, when using the mean finger forces provided by B. J. Martin et al., 1996, the resulting min-to-max ratio is close to $0.9$. (It is $0.91$.)
+
+[^norvig]: The bigram frequencies are extracted from Norvig's "English Letter Frequency Counts", which is based on word frequencies found in Google books Ngrams raw data set. Consequently, words are isolated for this analysis, and their first and last characters are ignored.
+
+[^penalties-errors]: The following mistakes were found in the implementation of interkey penalties:
+  - For `outward`: Side keys (i.e., the keys not included in the 24 keys vertically aligned with the home keys) where omitted.
+  - For `skip_row_1away`: Included 4↔27 (L1↑↔L1↘) and 13↔30 (R1↑↔R1↙) (which are already included in `skip_row_0away`), instead of 4↔27 (L2↑↔L1↘) and 14↔30 (R2↑↔R1↙).
+  - For `skip_row_2away`: Forgot 2↔27 (L3↑↔L1↘) and 15↔30 (R3↑↔R1↙) (while 10↔25 (L3↓↔L1↗) and 23↔28 (R3↓↔R1↖) are included).
+  - For `skip_row_3away`: Forgot 1↔27 (L4↑↔L1↘) (while 9↔25 (L4↓↔L1↗) and 16↔30 (R4↑↔R1↙) are included).
+
+[^martin96]: Martin, B. J., Armstrong, T. J., Foulke, J. A., Natarajan, S., Klinenberg, E., Serina, E., & Rempel, D. (1996). "Keyboard Reaction Force and Finger Flexor Electromyograms during Computer Keyboard Work". *Human Factors*, 38(4), 654-664.
+
+[^questionable-penalties]: In the absence of measurement, the gravity attributed to each situation is a matter of opinion. It is also dependant on one's main objective: speed vs ergonomics. Typically, having one finger going from the lower to the upper row is particularly bad for speed, while from an ergonomics standpoint, it is not a lot worse than what both key positions, independently, already imply.
+
+It is noted that Arno's work also use interkey speed data obtained from Işeri and Ekşioğlu, 2015, although this is only used to evaluate the produced and not during its creation. However, we do thing that this interkey speed data is of little relevance, due to the used methodology (i.e., asking the subjects to alternate between two keys for a given amount of time).
+
+## Our scoring
+
+The main target is ergonomics and hand comfort. Speed is secondary.
+
+We combine key costs and interkey costs. Key costs rate the discomfort associated to each key, used in isolation. Interkey costs rate the increase (or decrease) in discomfort tide to the use of the two keys successively. Typically, going from <kbd>R1↑</kbd> to <kbd>R2↓</kbd> is worse than typing <kbd>R1↑</kbd> and <kbd>R2↓</kbd> in isolation, due to the peculiar hand position: not just stretching the index and folding the middle finger, but doing both at the same time. On the other hand, extending the index (<kbd>R1↑</kbd>) is less of an issue when we just extended the middle finger (<kbd>R2↑</kbd>); and tapping a key two times in a row isn't twice as bad as tapping it once.
+
+Interkey costs are applied to the directly successive key presses (tied to bigrams), but also to pairs of key presses with one key in between (tied to skipgrams).

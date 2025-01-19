@@ -1,7 +1,8 @@
+.pytest_cache
 .venv
 .vscode
 __pycache__
 tempCodeRunnerFile.py
 *.egg
 *.egg-info
-~
+~*
