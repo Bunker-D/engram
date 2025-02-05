@@ -1,3 +1,4 @@
+# ruff:noqa: ANN201
 """
 We typically have a 26×26 or 30×30 frequency matrix,
 from which we extract 8, 16, or 24 lines and columns.
@@ -14,8 +15,8 @@ We also know that using a numpy array to address a matrix is faster than using a
 """
 
 import numpy as np
-from numpy.typing import NDArray
 from benchmark import Benchmark
+from numpy.typing import NDArray
 
 full_matrix: NDArray  # n_total × n_total
 full_indices: list[int] | NDArray[np.intp]
@@ -59,12 +60,17 @@ tuple_indices_moved: tuple[int, ...]
 
 
 def setup_numpy_v_list_idx(n_total: int, n_extracted: int):
-    global matrix, list_indices_fixed, np_indices_fixed, np8_indices_fixed, tuple_indices_moved
+    global \
+        matrix, \
+        list_indices_fixed, \
+        np_indices_fixed, \
+        np8_indices_fixed, \
+        tuple_indices_moved
     matrix = np.random.rand(n_total, n_total)
     indices = rand_indices(n_total, n_extracted)
     tuple_indices_moved = tuple(indices[-8:])
     list_indices_fixed = indices[:-8]
-    np_indices_fixed = np.array(list_indices_fixed)
+    np_indices_fixed = np.array(list_indices_fixed, dtype=np.intp)
     np8_indices_fixed = np.array(list_indices_fixed, dtype=np.int8)
 
 

@@ -1,20 +1,34 @@
+# ruff:noqa: ANN201
 import numpy as np
 from benchmark import Benchmark
+from numpy.typing import NDArray
 
 n = 26
 x = np.random.rand(n, n)
 
-i_sl = None
-i_list = None
-i_tuple = None
-i_np = None
-i_bool = None
-i_bool_np = None
-i_bool2D = None
+i_sl: slice
+i_list: list[int]
+i_tuple: tuple[int, ...]
+i_np: NDArray[np.intp]
+i_bool: list[bool]
+i_bool_np: NDArray[np.bool]
+i_bool2D: NDArray[np.bool]
 
 
-def setup_case(k):
-    global sub_n, i_sl, i_list, i_tuple, i_np, i_bool, i_bool_np, i_bool2D, x_2d, x_2d_, x_1d, x_1d_
+def setup_case(k: int):
+    global \
+        sub_n, \
+        i_sl, \
+        i_list, \
+        i_tuple, \
+        i_np, \
+        i_bool, \
+        i_bool_np, \
+        i_bool2D, \
+        x_2d, \
+        x_2d_, \
+        x_1d, \
+        x_1d_
     sub_n = k
     i_sl = slice(k)
     i_list = list(range(k))
@@ -33,98 +47,98 @@ def setup_case(k):
 def sel_sl_raw():
     """`m[:n, :][:, :n]` with `n: int`"""
     global x, sub_n
-    x[:sub_n, :][:, :sub_n]
+    return x[:sub_n, :][:, :sub_n]
 
 
 def sel_sl():
     """`m[i, :][:, i]` with `i: slice`"""
     global x, i_sl
-    x[i_sl, :][:, i_sl]
+    return x[i_sl, :][:, i_sl]
 
 
 def sel_list():
     """`m[i, :][:, i]` with `i: list[int]`"""
     global x, i_list
-    x[i_list, :][:, i_list]
+    return x[i_list, :][:, i_list]
 
 
 def sel_tuple():
     """`m[i, :][:, i]` with `i: tuple[int]`"""
     global x, i_tuple
-    x[i_tuple, :][:, i_tuple]
+    return x[i_tuple, :][:, i_tuple]
 
 
 def sel_np():
     """`m[i, :][:, i]` with `i: NpVector[int]`"""
     global x, i_np
-    x[i_np, :][:, i_np]
+    return x[i_np, :][:, i_np]
 
 
 def sel_np_list():
     """with `i: tuple[int]` converted to `NpVector[int]`"""
     global x, i_tuple
     i = np.array(i_tuple)
-    x[i, :][:, i]
+    return x[i, :][:, i]
 
 
 def sel_bool():
     """`m[i, :][:, i]` with `i: list[bool]`"""
     global x, i_bool
-    x[i_bool, :][:, i_bool]
+    return x[i_bool, :][:, i_bool]
 
 
 def sel_bool_np():
     """`m[i, :][:, i]` with `i: NpVector[bool]`"""
     global x, i_bool_np
-    x[i_bool_np, :][:, i_bool_np]
+    return x[i_bool_np, :][:, i_bool_np]
 
 
 def sel_bool2D():
     """`m[i]` with `i: NpArray2D[bool]`"""
     global x, i_bool2D
-    x[i_bool2D]
+    return x[i_bool2D]
 
 
 def prod_2d():
     """`m * M` with `m,M: NpArray2D[float]`"""
     global x_2d, x_2d_
-    x_2d * x_2d_
+    return x_2d * x_2d_
 
 
 def prod_1d():
     """`m * M` with `m,M: NpVector[float]`"""
     global x_1d, x_1d_
-    x_1d * x_1d_
+    return x_1d * x_1d_
 
 
 def sum_2d():
     """`np.sum(m)` with `m: NpArray2D[float]`"""
     global x_2d
-    np.sum(x_2d)
+    return np.sum(x_2d)
 
 
 def sum_1d():
     """`np.sum(m)` with `m: NpVector[float]`"""
     global x_1d
-    np.sum(x_1d)
+    return np.sum(x_1d)
 
 
 def flatten():
     """`np.flatten(m)` with `m: NpArray2D[float]`"""
     global x_2d
-    x_2d.flatten()
+    return x_2d.flatten()
 
 
 def sum_prod():
     """`np.sum( m * M )` with `m,M: NpArray2D[float]`"""
     global x_2d, x_2d_
-    np.sum(x_2d * x_2d_)
+    return np.sum(x_2d * x_2d_)
 
 
 def sum_prod_flattened():
     """`np.sum( m.flatten() * M.flatten() )`"""
     global x_2d, x_2d_
-    np.sum(x_2d.flatten() * x_2d_.flatten())
+    return np.sum(x_2d.flatten() * x_2d_.flatten())
 
 
 swap_idx = np.array([2, 3])
@@ -141,7 +155,7 @@ def swap2_2D():
 def numpize_1D():
     """Convert a `list[int]` into a `Vector[int]`"""
     global x_2d, i_list
-    np.array(i_list)
+    return np.array(i_list)
 
 
 def swap2_1D():
@@ -151,7 +165,6 @@ def swap2_1D():
 
 
 if __name__ == "__main__":
-
     bm = Benchmark(sets_per_test=1000, runs_per_set=1000)
     bm.set_functions(
         [

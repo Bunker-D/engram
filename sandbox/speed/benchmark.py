@@ -1,8 +1,8 @@
-from locale import normalize
-from typing import Callable, Any, Literal
-import time
+# ruff:noqa: E731
 import re
+import time
 import warnings  # hack
+from typing import Any, Callable, Literal
 
 
 class Benchmark:
@@ -15,7 +15,7 @@ class Benchmark:
 
     def __init__(self, sets_per_test: int = 100, runs_per_set: int = 100) -> None:
         """
-        Create a Benchmark object that would run each one of the tested functions or commands
+        Create a Benchmark object that would run each one of the tested functions
         `runs_per_set` times (default: `100`), `sets_per_test` times (default: `100`).
         """
         self.sets_per_test = int(sets_per_test)
@@ -25,7 +25,7 @@ class Benchmark:
         self.__cases = {}
         self.__reset_times()
 
-    def set_functions(self, functions: list[Callable[[], Any] | str]):
+    def set_functions(self, functions: list[Callable[[], Any] | str]) -> None:
         """
         Set the list of functions to be run and timed by the Benchmark object.
         Those functions must take no argument.
@@ -37,9 +37,9 @@ class Benchmark:
         for f in functions:
             self.add_function(f)
 
-    def add_function(self, fun: Callable[[], Any] | str):
+    def add_function(self, fun: Callable[[], Any] | str) -> None:
         """
-        Add a function to the list of functions to be run and timed by the Benchmark object.
+        Add a function to the list of functions to be run and timed.
         This functions must take no argument.
         Alternatively, a string can be provided instead of a function, in which case
         what is measured is the time to execute the evaluated string.
@@ -51,32 +51,32 @@ class Benchmark:
             fun = f
         self.__functions.append(fun)
 
-    def set_cases(self, cases: dict[str, Callable[[], None] | str]):
+    def set_cases(self, cases: dict[str, Callable[[], None] | str]) -> None:
         """
         Set cases for which the target functions or commands must be timed.
         Each case is defined by a name (its key in the dictionary provided as argument),
         and a setup function taking no argument (the attached value).
         This setup function is typically used to setup global variables that are used
         in the target functions or commands.\n
-        By default, the setup function is run only once before running all functions many times.
-        In order to run it every time before running a test function, set the attribute
-        `.setup_once` to `False`.
+        By default, the setup function is run only once before running all functions
+        many times. In order to run it every time before running a test function,
+        set the attribute `.setup_once` to `False`.
         """
         self.__reset_times()
         self.__cases = {}
         for name, setup in cases.items():
             self.add_case(name, setup)
 
-    def add_case(self, case_name: str, case_setup: Callable[[], None] | str):
+    def add_case(self, case_name: str, case_setup: Callable[[], None] | str) -> None:
         """
         Add a case for which the target functions or commands must be timed.
         The case is defined by a name (`case_name`),
         and a setup function taking no argument (`case_setup`).
         This setup function is typically used to setup global variables that are used
         in the target functions or commands.\n
-        By default, the setup function is run only once before running all functions many times.
-        In order to run it every time before running a test function, set the attribute
-        `.setup_once` to `False`.
+        By default, the setup function is run only once before running all functions
+        many times. In order to run it every time before running a test function,
+        set the attribute `.setup_once` to `False`.
         """
         if case_name in self.__cases:
             raise KeyError(f"Case name “{case_name}” already in use.")
@@ -87,7 +87,8 @@ class Benchmark:
 
     def run(self) -> None:
         """
-        Run and time the target functions and/or commands, for each target case (if relevant).
+        Run and time the target functions and/or commands,
+        for each target case (if relevant).
         """
         self.__init_run()
         for case, setup in self.__cases.items():
@@ -135,10 +136,10 @@ class Benchmark:
     ) -> None:
         """
         Report the run times in the terminal.
-        - `normalize_with`: If not `None`, the results are normalized by dividing them by:
-                - The time for the *n*-th function/command `normalize_with` is an integer *n*.
-                - The smallest time (on a case-by-case basis) if `normalize_with = "min"`.
-                - The largest time (on a case-by-case basis) if `normalize_with = "max"`.
+        - `normalize_with`: If not `None`, results are normalized by dividing them by:
+            - The time for the *n*-th function if `normalize_with` is an integer *n*.
+            - The smallest time (on a case-by-case basis) if `normalize_with = "min"`.
+            - The largest time (on a case-by-case basis) if `normalize_with = "max"`.
         - `use_doc_as_name`: Use the docstring of the function (if any) to designate it.
         """
         self.__ensure_run()
@@ -162,13 +163,13 @@ class Benchmark:
         self,
         normalize_with: Literal["min", "max"] | int | None = None,
         use_doc_as_name: bool = False,
-    ):
+    ) -> None:
         """
         Report the run times as an html table.
-        - `normalize_with`: If not `None`, the results are normalized by dividing them by:
-                - The time for the *n*-th function/command `normalize_with` is an integer *n*.
-                - The smallest time (on a case-by-case basis) if `normalize_with = "min"`.
-                - The largest time (on a case-by-case basis) if `normalize_with = "max"`.
+        - `normalize_with`: If not `None`, results are normalized by dividing them by:
+            - The time for the *n*-th function if `normalize_with` is an integer *n*.
+            - The smallest time (on a case-by-case basis) if `normalize_with = "min"`.
+            - The largest time (on a case-by-case basis) if `normalize_with = "max"`.
         - `use_doc_as_name`: Use the docstring of the function (if any) to designate it.
         """
         self.__ensure_run()
@@ -192,7 +193,7 @@ class Benchmark:
             ratio_text = ""
         lines.append(
             [
-                f'<th>Executing</th><th colspan="{len(self.__cases)}">Execution in ms, for {n_total:,} executions{ratio_text}</th>'
+                f'<th>Executing</th><th colspan="{len(self.__cases)}">Execution in ms, for {n_total:,} executions{ratio_text}</th>'  # noqa: E501
             ]
         )
         if self.__has_cases():
@@ -206,14 +207,14 @@ class Benchmark:
         for i, f in enumerate(f_names):
             line = [f"<td>{f}</td>"]
             for case in self.__cases:
-                value = f"{self.__times_ns[case][i]/1000:,.1f}"
+                value = f"{self.__times_ns[case][i] / 1000:,.1f}"
                 if normalized:
                     value += f"<br>({normalized[case][i]:.2f})"
                 line.append(f"<td>{value}</td>")
             lines.append(line)
         table = "<table>"
         for line in lines:
-            table += f"\n  <tr>\n    {"\n    ".join(items for items in line)}\n  </tr>"
+            table += f"\n  <tr>\n    {'\n    '.join(items for items in line)}\n  </tr>"
         table += "\n</table>"
         print(table)
 
@@ -269,7 +270,7 @@ class Benchmark:
         return "\n".join(lines)
 
     @staticmethod
-    def __html_format(s) -> str:
+    def __html_format(s: str) -> str:
         # This is knowingly bad… But enough for now.
         s = re.sub(r"(?<!\\)`((\S.*?)?[^\s\\])`", lambda m: f"<code>{m[1]}</code>", s)
         s = re.sub(r"(?<!\\)\*\*((\S.*?)?[^\s\\])\*\*", lambda m: f"<b>{m[1]}</b>", s)

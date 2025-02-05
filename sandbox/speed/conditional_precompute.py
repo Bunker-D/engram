@@ -1,6 +1,7 @@
+# ruff:noqa: ANN201
 import numpy as np
-from numpy.typing import NDArray
 from benchmark import Benchmark
+from numpy.typing import NDArray
 
 n_total = 26
 freq_matrix = np.random.rand(n_total, n_total)

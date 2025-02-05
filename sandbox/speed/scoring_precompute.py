@@ -1,7 +1,9 @@
-import numpy as np
-from numpy.typing import NDArray
+# ruff:noqa: ANN201
 from itertools import permutations
+
+import numpy as np
 from benchmark import Benchmark
+from numpy.typing import NDArray
 
 n = 4 * 8  # 26
 costs = np.random.rand(n, n)
