@@ -1,7 +1,7 @@
 # ruff:noqa: E731
 import re
 import time
-import warnings  # hack
+import warnings  # HACK
 from typing import Any, Callable, Literal
 
 
@@ -103,7 +103,7 @@ class Benchmark:
     def __init_run(self) -> None:
         self.__ensure_case()
         self.__times_ns = {}
-        self.warned = False  # hack
+        self.warned = False  # HACK
 
     def __run_functions_without_setup(self, times_ns: list[int]) -> None:
         for _ in range(self.sets_per_test):
@@ -117,9 +117,9 @@ class Benchmark:
     def __run_functions_with_setup(
         self, times_ns: list[int], setup: Callable[[], None]
     ) -> None:
-        if not self.warned:  # hack
-            warnings.warn("Case setup times are included in the results.")  # hack
-            self.warned = True  # hack
+        if not self.warned:  # HACK
+            warnings.warn("Case setup times are included in the results.")  # HACK
+            self.warned = True  # HACK
         for _ in range(self.sets_per_test):
             for i, f in enumerate(self.__functions):
                 t = time.time_ns()
