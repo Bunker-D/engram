@@ -1,0 +1,31 @@
+{
+	"cSpell.words": [
+		"bigram",
+		"dparam",
+		"freq",
+		"freqs",
+		"interkey",
+		"intp",
+		"ndarray",
+		"ndim",
+		"newaxis",
+		"Numpy",
+		"precomputation",
+		"precompute",
+		"pyside",
+		"pytest",
+		"skipgram"
+	],
+  "files.exclude": {
+    ".venv": false,
+    ".vscode": false,
+		"**/*.egg-info": true,
+		"__pycache__": true,
+		"tempCodeRunnerFile.py": true,
+	},
+	"python.testing.pytestArgs": [
+		"tests"
+	],
+	"python.testing.unittestEnabled": false,
+	"python.testing.pytestEnabled": true
+}

@@ -1,15 +1,31 @@
 [project]
 name = "engram"
-version = "0.0.1"
-authors = [{ name = "Bunker D", email = "contact@bunkerd.fr" }]
+version = "0.1.0"
+description = "Add your description here"
 readme = "README.md"
+authors = [
+    { name = "Bunker D", email = "contact@bunkerd.fr" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.2.2",
+]
 
+[project.optional-dependencies]
+gui = [
+    "pyside6>=6.8.2",
+]
 
-dependencies = ["numpy"]
-optional-dependencies = { dev = ["black", "pytest", "pytest-dparam"] }
-requires-python = ">= 3.12"
-
+[tool.ruff.lint]
+select = ["E", "F", "ANN"]
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-dparam>=1.0.0",
+    "ruff>=0.9.4",
+]

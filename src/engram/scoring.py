@@ -1,9 +1,11 @@
-import numpy as np
-from numpy.typing import NDArray
+# ruff: noqa: F401  # hack
+
 from dataclasses import dataclass
 from typing import Callable, Literal, NoReturn, TypedDict
-import yaml
 
+import numpy as np
+import yaml
+from numpy.typing import NDArray
 
 # > Building key data from descriptions in YAML
 
@@ -20,7 +22,7 @@ class Key:
             self.hand = finger[0]  # type: ignore
             assert self.hand in "LR"
             self.finger = "T1234".index(finger[1])  # type: ignore
-        except:
+        except (IndexError, AssertionError, ValueError):
             self.__raise_invalid_finger(finger)
         self.h_dist = h_dist
         self.v_dist = v_dist
@@ -44,13 +46,13 @@ class Key:
         while y or x:
             x_sign = self.__sign(x)
             y_sign = self.__sign(y)
+            # fmt: off
             movement += {
-                # fmt: off
                 (-1,+1): "↖", (0,+1): "↑", (+1,+1): "↗",
                 (-1, 0): "←", (0, 0): "●", (+1, 0): "→",
                 (-1,-1): "↙", (0,-1): "↓", (+1,-1): "↘",
-                # fmt: on
             }[x_sign, y_sign]
+            # fmt: on
             x -= x_sign
             y -= y_sign
         return movement or "●"

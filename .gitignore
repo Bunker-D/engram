@@ -1,8 +1,8 @@
-.pytest_cache
-.venv
-.vscode
 __pycache__
-tempCodeRunnerFile.py
-*.egg
+*.py[oc]
+build/
+dist/
+wheels/
 *.egg-info
-~*
+.venv
+.pytest_cache
