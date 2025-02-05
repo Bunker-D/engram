@@ -1,5 +1,6 @@
 {
 	"cSpell.words": [
+		"Antialiasing",
 		"bigram",
 		"dparam",
 		"freq",
@@ -17,9 +18,9 @@
 		"pytest",
 		"skipgram"
 	],
-  "files.exclude": {
-    ".venv": false,
-    ".vscode": false,
+	"files.exclude": {
+		".venv": false,
+		".vscode": false,
 		"**/*.egg-info": true,
 		"__pycache__": true,
 		"tempCodeRunnerFile.py": true,
@@ -28,5 +29,9 @@
 		"tests"
 	],
 	"python.testing.unittestEnabled": false,
-	"python.testing.pytestEnabled": true
+	"python.testing.pytestEnabled": true,
+	"vsicons.associations.folders": [
+		{ "icon": "src", "extensions": ["engram"], "format": "svg" },
+		{ "icon": "tools", "extensions": ["sandbox"], "format": "svg" },
+	]
 }
