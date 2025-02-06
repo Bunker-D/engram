@@ -2,7 +2,13 @@ import numpy as np
 from pytest import raises
 from pytest_dparam import d_parametrize
 
-from engram.matrix_based_builder import MatrixBasedLayoutBuilder
+from engram.matrix_based_builder import (
+    MatrixBasedLayoutBuilder,
+    NpArray,
+    NpArray1D,
+    NpArray2D,
+    NpVector,
+)
 
 
 class Test_add_key_costs:
@@ -28,7 +34,11 @@ class Test_add_key_costs:
     }
 
     @d_parametrize(input_formats)
-    def test_store_provided_data(self, key_costs, char_freqs):
+    def test_store_provided_data(
+        self,
+        key_costs: NpVector | NpArray1D | list[float],
+        char_freqs: NpVector | NpArray1D | list[float],
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
 
         builder.add_key_costs(key_costs, char_freqs)
@@ -39,7 +49,11 @@ class Test_add_key_costs:
         assert np.array_equal(stored_freqs, [1, 2, 3, 4])
 
     @d_parametrize(input_formats)
-    def test_store_as_np_vectors(self, key_costs, char_freqs):
+    def test_store_as_np_vectors(
+        self,
+        key_costs: NpVector | NpArray1D | list[float],
+        char_freqs: NpVector | NpArray1D | list[float],
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
 
         builder.add_key_costs(key_costs, char_freqs)
@@ -50,7 +64,7 @@ class Test_add_key_costs:
         assert stored_costs.shape == (3,)
         assert stored_freqs.shape == (4,)
 
-    def test_store_a_copy(self):
+    def test_store_a_copy(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         costs = np.array([1, 2, 3])
         freqs = np.array([1, 2, 3, 4])
@@ -63,7 +77,7 @@ class Test_add_key_costs:
         assert np.array_equal(stored_costs, [1, 2, 3])
         assert np.array_equal(stored_freqs, [1, 2, 3, 4])
 
-    def test_store_successive_added_pairs(self):
+    def test_store_successive_added_pairs(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         costs_0: list[float] = [1, 2, 3]
         freqs_0: list[float] = [1, 2, 3, 4]
@@ -80,7 +94,7 @@ class Test_add_key_costs:
         assert np.array_equal(stored_costs_1, costs_1)
         assert np.array_equal(stored_freqs_1, freqs_1)
 
-    def test_combine_when_same_costs(self):
+    def test_combine_when_same_costs(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         costs: list[float] = [1, 2, 3]
         freqs_0: list[float] = [1, 2, 3, 4]
@@ -95,7 +109,7 @@ class Test_add_key_costs:
         assert np.array_equal(stored_costs, costs)
         assert np.array_equal(stored_freqs, freqs_total)
 
-    def test_combine_when_same_freqs(self):
+    def test_combine_when_same_freqs(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         freqs: list[float] = [1, 2, 3, 4]
         costs_0: list[float] = [1, 2, 3]
@@ -142,7 +156,9 @@ class Test_add_key_costs:
             },
         }
     )
-    def test_invalid_size_raise_valueerror(self, costs, freqs):
+    def test_invalid_size_raise_valueerror(
+        self, costs: NpArray | list, freqs: NpArray | list
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
 
         with raises(ValueError):
@@ -168,7 +184,11 @@ class Test_add_key_costs:
             },
         }
     )
-    def test_inconsistent_1d_sizes_raise_valueerror(self, costs, freqs):
+    def test_inconsistent_1d_sizes_raise_valueerror(
+        self,
+        costs: NpVector | NpArray1D | list[float],
+        freqs: NpVector | NpArray1D | list[float],
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(
             key_costs=[1, 2],
@@ -190,7 +210,11 @@ class Test_add_key_costs:
             },
         }
     )
-    def test_inconsistent_1d_2d_sizes_raise_valueerror(self, costs, freqs):
+    def test_inconsistent_1d_2d_sizes_raise_valueerror(
+        self,
+        costs: NpVector | NpArray1D | list[float],
+        freqs: NpVector | NpArray1D | list[float],
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_interkey_costs(
             interkey_costs=[[1, 2], [3, 4]],
@@ -214,7 +238,11 @@ class Test_add_interkey_costs:
     }
 
     @d_parametrize(input_formats)
-    def test_store_provided_data(self, key_costs, char_freqs):
+    def test_store_provided_data(
+        self,
+        key_costs: NpArray2D | list[list[float]],
+        char_freqs: NpArray2D | list[list[float]],
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
 
         builder.add_interkey_costs(key_costs, char_freqs)
@@ -225,7 +253,11 @@ class Test_add_interkey_costs:
         assert np.array_equal(stored_freqs, [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
     @d_parametrize(input_formats)
-    def test_store_as_np_arrays(self, key_costs, char_freqs):
+    def test_store_as_np_arrays(
+        self,
+        key_costs: NpArray2D | list[list[float]],
+        char_freqs: NpArray2D | list[list[float]],
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
 
         builder.add_interkey_costs(key_costs, char_freqs)
@@ -236,7 +268,7 @@ class Test_add_interkey_costs:
         assert stored_costs.shape == (2, 2)
         assert stored_freqs.shape == (3, 3)
 
-    def test_store_a_copy(self):
+    def test_store_a_copy(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         costs = np.array([[1, 2], [3, 4]])
         freqs = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -249,7 +281,7 @@ class Test_add_interkey_costs:
         assert np.array_equal(stored_costs, [[1, 2], [3, 4]])
         assert np.array_equal(stored_freqs, [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
-    def test_store_successive_added_pairs(self):
+    def test_store_successive_added_pairs(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         costs_0: list[list[float]] = [[1, 2], [3, 4]]
         freqs_0: list[list[float]] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
@@ -266,7 +298,7 @@ class Test_add_interkey_costs:
         assert np.array_equal(costs_1, stored_costs_1)
         assert np.array_equal(freqs_1, stored_freqs_1)
 
-    def test_combine_when_same_costs(self):
+    def test_combine_when_same_costs(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         costs: list[list[float]] = [[1, 2], [3, 4]]
         freqs_0: list[list[float]] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
@@ -281,7 +313,7 @@ class Test_add_interkey_costs:
         assert np.array_equal(stored_costs, costs)
         assert np.array_equal(stored_freqs, freqs_total)
 
-    def test_combine_when_same_freqs(self):
+    def test_combine_when_same_freqs(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         freqs: list[list[float]] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
         costs_0: list[list[float]] = [[1, 2], [3, 4]]
@@ -344,7 +376,9 @@ class Test_add_interkey_costs:
             },
         }
     )
-    def test_invalid_size_raise_valueerror(self, costs, freqs):
+    def test_invalid_size_raise_valueerror(
+        self, costs: NpArray | list, freqs: NpArray | list
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
 
         with raises(ValueError):
@@ -370,7 +404,9 @@ class Test_add_interkey_costs:
             },
         }
     )
-    def test_inconsistent_2d_sizes_raise_valueerror(self, costs, freqs):
+    def test_inconsistent_2d_sizes_raise_valueerror(
+        self, costs: NpArray2D | list[list[float]], freqs: NpArray2D | list[list[float]]
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_interkey_costs(
             interkey_costs=[[1, 2], [3, 4]],
@@ -392,7 +428,9 @@ class Test_add_interkey_costs:
             },
         }
     )
-    def test_inconsistent_1d_2d_sizes_raise_valueerror(self, costs, freqs):
+    def test_inconsistent_1d_2d_sizes_raise_valueerror(
+        self, costs: NpArray2D | list[list[float]], freqs: NpArray2D | list[list[float]]
+    ) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(
             key_costs=[1, 2],
@@ -459,7 +497,7 @@ class Test_score:
         + (730 * 824 + 731 * 821 + 735 * 823 + 733 * 822)
     )
 
-    def test__only_1d__only_fixed(self):
+    def test__only_1d__only_fixed(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(self.costs_1d_a, self.freqs_1d_a)
         builder.add_key_costs(self.costs_1d_b, self.freqs_1d_b)
@@ -469,7 +507,7 @@ class Test_score:
 
         assert score == self.score_1d_a_0153_4132 + self.score_1d_b_0153_4132
 
-    def test__only_1d__only_opened(self):
+    def test__only_1d__only_opened(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(self.costs_1d_a, self.freqs_1d_a)
         builder.add_key_costs(self.costs_1d_b, self.freqs_1d_b)
@@ -479,7 +517,7 @@ class Test_score:
 
         assert score == self.score_1d_a_0153_4132 + self.score_1d_b_0153_4132
 
-    def test__only_1d__fixed_and_opened(self):
+    def test__only_1d__fixed_and_opened(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(self.costs_1d_a, self.freqs_1d_a)
         builder.add_key_costs(self.costs_1d_b, self.freqs_1d_b)
@@ -490,7 +528,7 @@ class Test_score:
 
         assert score == self.score_1d_a_0153_4132 + self.score_1d_b_0153_4132
 
-    def test__only_2d__only_fixed(self):
+    def test__only_2d__only_fixed(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_interkey_costs(self.costs_2d_a, self.freqs_2d_a)
         builder.add_interkey_costs(self.costs_2d_b, self.freqs_2d_b)
@@ -500,7 +538,7 @@ class Test_score:
 
         assert score == self.score_2d_a_0153_4132 + self.score_2d_b_0153_4132
 
-    def test__only_2d__only_opened(self):
+    def test__only_2d__only_opened(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_interkey_costs(self.costs_2d_a, self.freqs_2d_a)
         builder.add_interkey_costs(self.costs_2d_b, self.freqs_2d_b)
@@ -510,7 +548,7 @@ class Test_score:
 
         assert score == self.score_2d_a_0153_4132 + self.score_2d_b_0153_4132
 
-    def test__only_2d__fixed_and_opened(self):
+    def test__only_2d__fixed_and_opened(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_interkey_costs(self.costs_2d_a, self.freqs_2d_a)
         builder.add_interkey_costs(self.costs_2d_b, self.freqs_2d_b)
@@ -521,7 +559,7 @@ class Test_score:
 
         assert score == self.score_2d_a_0153_4132 + self.score_2d_b_0153_4132
 
-    def test__1d_and_2d__only_fixed(self):
+    def test__1d_and_2d__only_fixed(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(self.costs_1d_a, self.freqs_1d_a)
         builder.add_interkey_costs(self.costs_2d_a, self.freqs_2d_a)
@@ -531,7 +569,7 @@ class Test_score:
 
         assert score == self.score_1d_a_0153_4132 + self.score_2d_a_0153_4132
 
-    def test__1d_and_2d__only_opened(self):
+    def test__1d_and_2d__only_opened(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(self.costs_1d_a, self.freqs_1d_a)
         builder.add_interkey_costs(self.costs_2d_a, self.freqs_2d_a)
@@ -541,7 +579,7 @@ class Test_score:
 
         assert score == self.score_1d_a_0153_4132 + self.score_2d_a_0153_4132
 
-    def test__1d_and_2d__fixed_and_opened(self):
+    def test__1d_and_2d__fixed_and_opened(self) -> None:
         builder = MatrixBasedLayoutBuilder()
         builder.add_key_costs(self.costs_1d_a, self.freqs_1d_a)
         builder.add_interkey_costs(self.costs_2d_a, self.freqs_2d_a)

@@ -24,7 +24,7 @@ class Key:
     def __raise_invalid_finger(finger: str) -> NoReturn:
         raise ValueError(f"Invalid finger: {finger}")
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         pass
 
     def __str__(self) -> str:
@@ -58,6 +58,8 @@ class Key:
             return 1
         return 0
 
+
+# ruff:noqa: E501  #HACK
 
 # class KeyboardDescr(TypedDict):
 #     fingers: str
@@ -321,7 +323,7 @@ ANSI:
     L4   -   LT             RT            RT  -   -   -
   layout: |
     `~ 1! 2@ 3# 4$ 5% 6^ 7& 8* 9( 0) -_ =+ ※
-    ↹ q w e r t y u i o p [{ ]} \|
+    ↹ q w e r t y u i o p [{ ]} \\|
     ※ a s d f g h j k l ;: '" ↵
     ⇫ z x c v b n m ,< .> /? ⇫
     ⋉ ⊞ ⋊ ‿ ⋈ ※ ※ ※

@@ -4,14 +4,14 @@ from engram.layout_builder import LayoutBuilder
 
 
 class Test_fix:
-    def test_base_case(self):
+    def test_base_case(self) -> None:
         builder = LayoutBuilder()
 
         builder.fix([1, 3, 5], [8, 7, 6])
 
         assert builder._fixed == {1: 8, 3: 7, 5: 6}
 
-    def test_config_change_recorded(self):
+    def test_config_change_recorded(self) -> None:
         builder = LayoutBuilder()
         builder._config_changed = False
 
@@ -19,7 +19,7 @@ class Test_fix:
 
         assert builder._config_changed
 
-    def test_successive_use(self):
+    def test_successive_use(self) -> None:
         builder = LayoutBuilder()
 
         builder.fix([1, 3, 5], [8, 7, 6])
@@ -27,7 +27,7 @@ class Test_fix:
 
         assert builder._fixed == {1: 8, 3: 7, 5: 6, 2: 9, 4: 0}
 
-    def test_successive_use_with_intersect(self):
+    def test_successive_use_with_intersect(self) -> None:
         builder = LayoutBuilder()
 
         builder.fix([1, 3, 5], [8, 7, 6])
@@ -35,7 +35,7 @@ class Test_fix:
 
         assert builder._fixed == {1: 8, 3: 5, 5: 6, 2: 9, 4: 0}
 
-    def test_works_with_open(self):
+    def test_works_with_open(self) -> None:
         builder = LayoutBuilder()
         builder.open([1, 2, 3], [6, 7, 9])
 
@@ -43,7 +43,7 @@ class Test_fix:
 
         assert builder._fixed == {1: 8, 3: 7, 5: 6}
 
-    def test_remove_from_opened(self):
+    def test_remove_from_opened(self) -> None:
         builder = LayoutBuilder()
         builder.open([1, 2, 3], [6, 7, 9])
 
@@ -52,13 +52,13 @@ class Test_fix:
         assert builder._opened_keys == [2]
         assert builder._opened_chars == [9]
 
-    def test_assign_as_alias(self):
+    def test_assign_as_alias(self) -> None:
         builder = LayoutBuilder()
         assert builder.fix == builder.assign
 
 
 class Test_open:
-    def test_base_case(self):
+    def test_base_case(self) -> None:
         builder = LayoutBuilder()
 
         builder.open([1, 3, 5], [8, 7, 6])
@@ -66,7 +66,7 @@ class Test_open:
         assert sorted(builder._opened_keys) == [1, 3, 5]
         assert sorted(builder._opened_chars) == [6, 7, 8]
 
-    def test_config_change_recorded(self):
+    def test_config_change_recorded(self) -> None:
         builder = LayoutBuilder()
         builder._config_changed = False
 
@@ -74,7 +74,7 @@ class Test_open:
 
         assert builder._config_changed
 
-    def test_successive_use(self):
+    def test_successive_use(self) -> None:
         builder = LayoutBuilder()
 
         builder.open([1, 3, 5], [8, 7, 6])
@@ -83,7 +83,7 @@ class Test_open:
         assert sorted(builder._opened_keys) == [1, 2, 3, 4, 5]
         assert sorted(builder._opened_chars) == [0, 6, 7, 8, 9]
 
-    def test_successive_use_with_intersect(self):
+    def test_successive_use_with_intersect(self) -> None:
         builder = LayoutBuilder()
 
         builder.open([1, 3, 5], [8, 7, 6])
@@ -92,7 +92,7 @@ class Test_open:
         assert sorted(builder._opened_keys) == [1, 2, 3, 4, 5]
         assert sorted(builder._opened_chars) == [0, 6, 7, 8, 9]
 
-    def test_works_with_fix(self):
+    def test_works_with_fix(self) -> None:
         builder = LayoutBuilder()
         builder.fix([1, 2, 3], [6, 7, 8])
 
@@ -101,7 +101,7 @@ class Test_open:
         assert sorted(builder._opened_keys) == [1, 3, 5]
         assert sorted(builder._opened_chars) == [6, 8, 9]
 
-    def test_remove_from_fixed(self):
+    def test_remove_from_fixed(self) -> None:
         builder = LayoutBuilder()
         builder.fix([1, 2, 3], [6, 7, 8])
 
@@ -110,7 +110,7 @@ class Test_open:
         assert builder._fixed == {2: 7}
 
 
-def test_opened_permutations():
+def test_opened_permutations() -> None:
     builder = LayoutBuilder()
     keys = [0, 1, 2, 3, 4]
     chars = [3, 6, 8, 4, 9]
