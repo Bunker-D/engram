@@ -1,7 +1,9 @@
-from typing import Callable, Iterable, Literal
-from layout_builder import LayoutBuilder
+from typing import Iterable
+
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
+
+from engram.layout_builder import LayoutBuilder
 
 type NpArray = NDArray
 type NpArray2D = NDArray

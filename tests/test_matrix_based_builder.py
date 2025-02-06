@@ -1,7 +1,8 @@
-from pytest_dparam import d_parametrize
-from pytest import raises
 import numpy as np
-from matrix_based_builder import MatrixBasedLayoutBuilder
+from pytest import raises
+from pytest_dparam import d_parametrize
+
+from engram.matrix_based_builder import MatrixBasedLayoutBuilder
 
 
 class Test_add_key_costs:

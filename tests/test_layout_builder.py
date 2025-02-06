@@ -1,5 +1,6 @@
-from layout_builder import LayoutBuilder
 from math import factorial
+
+from engram.layout_builder import LayoutBuilder
 
 
 class Test_fix:
