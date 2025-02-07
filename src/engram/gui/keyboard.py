@@ -59,8 +59,10 @@ class Key:  # HACK Key class shouldn't be here
 
 
 class W_Key(W_FilledButton):
-    __x: float
-    __y: float
+    ux: float
+    uy: float
+    uw: float = 1
+    uh: float = 1
 
     def __init__(
         self,
@@ -71,11 +73,16 @@ class W_Key(W_FilledButton):
         mode: FillMode = FillMode.CenterSize,
     ) -> None:
         super().__init__(parent, mode=mode)
-        self.__x = x
-        self.__y = y
+        self.ux = x
+        self.uy = y
 
     def setSize(self, size: int) -> None:
-        self.setGeometry(round(self.__x * size), round(self.__y * size), size, size)
+        self.setGeometry(
+            round(self.ux * size),
+            round(self.uy * size),
+            round(self.uw * size),
+            round(self.uh * size),
+        )
 
 
 class W_Keyboard(QGraphicsView):
@@ -84,7 +91,10 @@ class W_Keyboard(QGraphicsView):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.keys = {}
-        # HACK Keyboard directly implemented as Sofle
+        self.__build_sofle()  # HACK Keyboard directly implemented as Sofle
+        self.__compute_geometry()
+
+    def __build_sofle(self) -> None:
         y_ = [0.6062, 0.6062, 0.1347, 0.0, 0.1347, 0.2642]
         x_ = list(range(6))
         h_dist_ = [-1, 0, 0, 0, 0, 1]
@@ -113,7 +123,6 @@ class W_Keyboard(QGraphicsView):
             for x, y, h_dist in zip(x_, y_, h_dist_):
                 key = Key(hand + "T", h_dist, 0)
                 self.__add_key(key, x, y)
-        self.__compute_geometry()
 
     def __add_key(self, key: Key, x: float, y: float) -> None:
         self.keys[key] = W_Key(x, y, self)
