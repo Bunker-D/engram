@@ -6,20 +6,57 @@ from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette
 from PySide6.QtWidgets import QPushButton
 
 
+class FillMode(Enum):
+    Top = "0V"
+    Bottom = "1V"
+    Left = "0H"
+    Right = "1H"
+    CenterVertical = "CV"
+    CenterHorizontal = "CH"
+    CenterArea = "CA"
+    CenterSize = "CS"
+    CircleArea = "OA"
+    CircleSize = "OS"
+
+    def _start_cut(self) -> float:
+        match self.value[0]:
+            case "0":
+                return 0.0
+            case "1":
+                return 1.0
+            case "C":
+                return 0.5
+            case "O":
+                return 0.5
+        raise NotImplementedError
+
+    def vertical_cut(self) -> bool:
+        return self.value[1] in "VAS"
+
+    def horizontal_cut(self) -> bool:
+        return self.value[1] in "HAS"
+
+    def sqrt_cut(self) -> bool:
+        return self.value[1] == "A"
+
+    def circle(self) -> bool:
+        return self.value[0] == "O"
+
+
 class FilledButton(QPushButton):
     fill: float
-    mode: "FilledButton.Mode"  # TODO ultimately private and static
+    mode: FillMode
 
     __corner_radius: int = 5
     __padding: int = 2
 
     def __init__(
         self,
-        mode: "FilledButton.Mode | None" = None,
-    ) -> None:  # TODO mode not in args
+        mode: FillMode = FillMode.CenterSize,
+    ) -> None:
         super().__init__()
+        self.mode = mode
         self.fill = 0
-        self.mode = mode if mode else self.Mode.CenterSize
         self.setCheckable(True)
         self.setFixedSize(70, 70)
 
@@ -82,39 +119,3 @@ class FilledButton(QPushButton):
     @staticmethod
     def __color_selection() -> QColor:
         return QPalette().color(QPalette.ColorGroup.Active, QPalette.ColorRole.Text)
-
-    class Mode(Enum):
-        Top = "0V"
-        Bottom = "1V"
-        Left = "0H"
-        Right = "1H"
-        CenterVertical = "CV"
-        CenterHorizontal = "CH"
-        CenterArea = "CA"
-        CenterSize = "CS"
-        CircleArea = "OA"
-        CircleSize = "OS"
-
-        def _start_cut(self) -> float:
-            match self.value[0]:
-                case "0":
-                    return 0.0
-                case "1":
-                    return 1.0
-                case "C":
-                    return 0.5
-                case "O":
-                    return 0.5
-            raise NotImplementedError
-
-        def vertical_cut(self) -> bool:
-            return self.value[1] in "VAS"
-
-        def horizontal_cut(self) -> bool:
-            return self.value[1] in "HAS"
-
-        def sqrt_cut(self) -> bool:
-            return self.value[1] == "A"
-
-        def circle(self) -> bool:
-            return self.value[0] == "O"
