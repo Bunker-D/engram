@@ -53,7 +53,6 @@ class W_FilledButton(QPushButton):
     def __init__(
         self,
         parent: QWidget | None = None,
-        /,
         mode: FillMode = FillMode.CenterSize,
     ) -> None:
         super().__init__(parent)

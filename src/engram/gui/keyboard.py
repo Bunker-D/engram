@@ -1,6 +1,8 @@
+from math import ceil, cos, radians, sin
 from typing import Literal, NoReturn
 
-from PySide6.QtWidgets import QApplication, QGraphicsView, QWidget
+from PySide6.QtGui import QTransform
+from PySide6.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QWidget
 
 from engram.gui.filled_button import FillMode, W_FilledButton  # TODO  Relative import
 
@@ -59,29 +61,63 @@ class Key:  # HACK Key class shouldn't be here
 
 
 class W_Key(W_FilledButton):
-    ux: float
-    uy: float
-    uw: float = 1
-    uh: float = 1
+    __x: float
+    __y: float
+    __w: float
+    __h: float
+    __a: float
 
     def __init__(
         self,
         x: float,
         y: float,
+        w: float = 1,
+        h: float = 1,
+        a: float = 0,
+        scene: QGraphicsScene | None = None,
         parent: QWidget | None = None,
-        /,
         mode: FillMode = FillMode.CenterSize,
     ) -> None:
-        super().__init__(parent, mode=mode)
-        self.ux = x
-        self.uy = y
+        super().__init__(parent=parent, mode=mode)
+        if scene:
+            scene.addWidget(self)
+        self.setPosition(x, y, w, h, a)
+
+    def setPosition(
+        self, x: float, y: float, w: float = 1, h: float = 1, a: float = 0
+    ) -> None:
+        self.__x = x
+        self.__y = y
+        self.__w = w
+        self.__h = h
+        self.__a = a
+        if not a:
+            return
+        self.__apply_a_rotation(a)
+        self.__apply_a_translation(a)
+
+    def __apply_a_rotation(self, a: float) -> None:
+        proxy = self.graphicsProxyWidget()
+        if proxy is None:
+            raise AttributeError(
+                "Cannot set an angle without being in a QGraphicsScene."
+            )
+        transform = QTransform()
+        transform.rotate(a)
+        proxy.setTransform(transform)
+
+    def __apply_a_translation(self, a: float) -> None:
+        c = cos(radians(a)) - 1
+        s = sin(radians(a))
+        self.__x -= (c * self.__w - s * self.__h) / 2
+        self.__y -= (s * self.__w + c * self.__h) / 2
 
     def setSize(self, size: int) -> None:
         self.setGeometry(
-            round(self.ux * size),
-            round(self.uy * size),
-            round(self.uw * size),
-            round(self.uh * size),
+            round(self.__x * size),
+            round(self.__y * size),
+            round(self.__w * size),
+            round(self.__h * size),
         )
 
 
@@ -95,46 +131,44 @@ class W_Keyboard(QGraphicsView):
         self.__compute_geometry()
 
     def __build_sofle(self) -> None:
-        y_ = [0.6062, 0.6062, 0.1347, 0.0, 0.1347, 0.2642]
-        x_ = list(range(6))
-        h_dist_ = [-1, 0, 0, 0, 0, 1]
-        finger_ = [str(f) for f in (4, 4, 3, 2, 1, 1)]
-        v_dist_ = [2, 1, 0, -1]
-        for hand in "LR":
-            if hand == "R":
-                x_ = [x + 6 + 3.7979 for x in x_]
-                y_.reverse()
-                h_dist_.reverse()
-                finger_.reverse()
-            for row, v_dist in enumerate(v_dist_):
-                for x, y, h_dist, finger in zip(x_, y_, h_dist_, finger_):
-                    y += row
-                    key = Key(hand + finger, h_dist, v_dist)
-                    self.__add_key(key, x, y)
-        h_dist_ = [-3, -2, -1, 0, 1]
-        x_ = [2.0, 3.0, 4.0, 5.17, 6.27]
-        y_ = [4.1347, 4.0, 4.1347, 4.404, 4.664]
-        for hand in "LR":
-            if hand == "R":
-                x_ = [11 + 3.7979 - x for x in x_]
-                x_.reverse()
-                y_.reverse()
-                h_dist_.reverse()
-            for x, y, h_dist in zip(x_, y_, h_dist_):
-                key = Key(hand + "T", h_dist, 0)
-                self.__add_key(key, x, y)
+        scene = QGraphicsScene(self)
+        self.setScene(scene)
 
-    def __add_key(self, key: Key, x: float, y: float) -> None:
-        self.keys[key] = W_Key(x, y, self)
+        x_ = [0, 1, 2, 3, 4, 5] * 4
+        y_ = [0.6062, 0.6062, 0.1347, 0.0, 0.1347, 0.2642]
+        y_ = [y + r for r in range(4) for y in y_]
+        finger_ = [str(f) for f in (4, 4, 3, 2, 1, 1)] * 4
+        h_dist_ = [-1, 0, 0, 0, 0, 1] * 4
+        v_dist_ = [v for v in [2, 1, 0, -1] for _ in range(6)]
+
+        x_ += [2, 3, 4, 5.15126, 6.25210]
+        y_ += [4.1347, 4.0, 4.1347, 4.38605, 4.64655]
+        finger_ += ["T"] * 5
+        h_dist_ += [-3, -2, -1, 0, 1]
+        v_dist_ += [0] * 5
+        a_ = [0.0] * (len(x_) - 2) + [22.8, 29.7]
+        w_ = [1] * len(x_)
+        h_ = [1] * (len(x_) - 1) + [1.25]
+
+        for hand in "LR":
+            if hand == "R":
+                x_ = [14.8 - x for x in x_]
+                a_ = [-a for a in a_]
+            for x, y, finger, h_dist, v_dist, a, w, h in zip(
+                x_, y_, finger_, h_dist_, v_dist_, a_, w_, h_
+            ):
+                key = Key(hand + finger, h_dist, v_dist)
+                w_key = W_Key(x, y, w, h, a, scene=scene)
+                self.keys[key] = w_key
 
     def __compute_geometry(self) -> None:
-        # HACK Fixed size
-        key_size = 70
-        self.setFixedSize(
-            round((12 + 3.7979) * key_size), round(5.664 * key_size)
-        )  # HACK Sizing based on Sofle geometry
+        key_size = 70  # HACK Fixed size
         for key in self.keys.values():
             key.setSize(key_size)
+        bounding_rect = self.scene().itemsBoundingRect()
+        margin = 5
+        bounding_rect.adjust(-margin, -margin, margin, margin)
+        self.setFixedSize(ceil(bounding_rect.width()), ceil(bounding_rect.height()))
 
 
 if __name__ == "__main__":
