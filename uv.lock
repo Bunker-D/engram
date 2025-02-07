@@ -25,6 +25,7 @@ gui = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "engram", extra = ["gui"] },
     { name = "pytest" },
     { name = "pytest-dparam" },
     { name = "ruff" },
@@ -38,6 +39,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "engram", extras = ["gui"] },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pytest-dparam", specifier = ">=1.0.0" },
     { name = "ruff", specifier = ">=0.9.4" },

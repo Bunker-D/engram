@@ -28,4 +28,5 @@ dev = [
     "pytest>=8.3.4",
     "pytest-dparam>=1.0.0",
     "ruff>=0.9.4",
+    "engram[gui]",
 ]
