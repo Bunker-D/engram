@@ -16,7 +16,8 @@
 		"precompute",
 		"pyside",
 		"pytest",
-		"skipgram"
+		"skipgram",
+		"Sofle"
 	],
 	"files.exclude": {
 		".venv": false,

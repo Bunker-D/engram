@@ -3,7 +3,7 @@ from math import sqrt
 
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette
-from PySide6.QtWidgets import QPushButton
+from PySide6.QtWidgets import QPushButton, QWidget
 
 
 class FillMode(Enum):
@@ -43,7 +43,7 @@ class FillMode(Enum):
         return self.value[0] == "O"
 
 
-class FilledButton(QPushButton):
+class W_FilledButton(QPushButton):
     fill: float
     mode: FillMode
 
@@ -52,13 +52,14 @@ class FilledButton(QPushButton):
 
     def __init__(
         self,
+        parent: QWidget | None = None,
+        /,
         mode: FillMode = FillMode.CenterSize,
     ) -> None:
-        super().__init__()
+        super().__init__(parent)
         self.mode = mode
         self.fill = 0
         self.setCheckable(True)
-        self.setFixedSize(70, 70)
 
     def paintEvent(self, arg__1: QPaintEvent) -> None:
         painter = QPainter(self)
