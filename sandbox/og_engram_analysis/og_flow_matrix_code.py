@@ -1,3 +1,7 @@
+"""
+Arno Klein's original code for computing the Flow Matrix, i.e., applying key and inter-key penalties.
+"""
+
 # fmt: off
 # ruff: noqa
 

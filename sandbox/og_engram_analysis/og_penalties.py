@@ -1,120 +1,79 @@
+"""
+CONCLUSIONS:
+
+Regarding mismatches with original 32×32 flow matrices:
+- outward:
+    Original implementation mistakenly ignored side keys.
+- skip_row_1away:
+    Original implementation mistakenly included 4↔27 (L1↑↔L1↘) and 13↔30 (R1↑↔R1↙)
+    (which are already included in skip_row_0away!),
+    instead of 4↔27 (L2↑↔L1↘) and 14↔30 (R2↑↔R1↙).
+- skip_row_2away:
+    Original implementation forgot 2↔27 (L3↑↔L1↘) and 15↔30 (R3↑↔R1↙)
+    (while 10↔25 (L3↓↔L1↗) and 23↔28 (R3↓↔R1↖) are included!).
+- skip_row_3away:
+    Original implementation forgot 1↔27 (L4↑↔L1↘)
+    (while 9↔25 (L4↓↔L1↗) and 16↔30 (R4↑↔R1↙) are included!).
+We also ignore:
+- shorter_above:
+    It is very badly defined, and covered through more accurate penalties.
+"""
+
 # ruff:noqa: E731
-from dataclasses import dataclass
-from typing import Callable, Literal, TypedDict
+
+from typing import Callable, Literal
 
 import numpy as np
 from numpy.typing import NDArray
 from og_flow_matrix_code import create_32x32_flow_matrix as og_flow_matrix
 
-_REPORT_DISPLACEMENT: bool = False
 _VERBOSE_WARNING: bool = False
 
 
-@dataclass
 class Key:
+    name: str
     hand: Literal["L", "R"]
     finger: Literal[0, 1, 2, 3, 4]
     dx: int
     dy: int
-    engram_id: int
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        hand, finger, dir = name
+        self.hand = hand  # type:ignore
+        self.finger = int(finger)  # type:ignore
+        assert self.hand in ["L", "R"]
+        assert self.finger in [0, 1, 2, 3, 4]
+        self.dx, self.dy = {
+            "↖": (-1,+1), "↑": (0,+1), "↗": (+1,+1),
+            "←": (-1, 0), "•": (0, 0), "→": (+1, 0),
+            "↙": (-1,-1), "↓": (0,-1), "↘": (+1,-1),
+        }[dir]  # fmt:skip
+        if self.hand == "R":
+            self.dx *= -1
 
     def __str__(self) -> str:
-        if _REPORT_DISPLACEMENT:
-            d = f"  ({self.dy},{self.dx})" if self.dy or self.dx else ""
-        else:
-            d = ""
-        return f"{self.engram_id:2}:  {self.hand}{self.finger}  {self.dir}{d}"
-
-    @property
-    def dir(self) -> str:
-        v_sign = self.__sign(self.dy)
-        h_sign = self.__sign(self.dx)
-        if self.hand == "R":
-            h_sign *= -1
-        return {
-            (+1,-1): "↖", (+1, 0): "↑", (+1,+1): "↗",
-            ( 0,-1): "←", ( 0, 0): "×", ( 0,+1): "→",
-            (-1,-1): "↙", (-1, 0): "↓", (-1,+1): "↘",
-        }[v_sign, h_sign]  # fmt: skip
-
-    @staticmethod
-    def __sign(n: int) -> Literal[-1, 0, 1]:
-        if n < 0:
-            return -1
-        if n > 0:
-            return 1
-        return 0
+        return self.name
 
 
-class KeyboardDescr(TypedDict):
-    fingers: str
-    engram_id: str
+# Keys covered by the original code, in the order it uses:
+keys = [
+    Key(k)
+    for k in """
+        L4↑ L3↑ L2↑ L1↑ L4• L3• L2• L1• L4↓ L3↓ L2↓ L1↓
+        R1↑ R2↑ R3↑ R4↑ R1• R2• R3• R4• R1↓ R2↓ R3↓ R4↓
+        L1↗ L1→ L1↘ R1↖ R1← R1↙ R4↗ R4→
+    """.split()
+]
 
 
-def main_keys(kb_descr: KeyboardDescr) -> list[Key]:  # HACK
-    kb_keys: list[Key] = []
-    ids = (
-        i
-        for line in kb_descr["engram_id"].strip().splitlines()
-        for i in line.strip().split()
-    )
-    fingers_descr = kb_descr["fingers"].strip().splitlines()
-    home_row = next(i for i, line in enumerate(fingers_descr) if "*" in line)
-    for row, fingers_line in enumerate(fingers_descr):
-        per_finger: dict[str, list[Key]] = {"L4": [], "L1": [], "R1": [], "R4": []}
-        for finger in fingers_line.strip().split():
-            id = next(ids)
-            if id == "-":
-                continue
-            finger = finger[:2]
-            key = Key(
-                hand=finger[0],  # type: ignore
-                finger="T1234".index(finger[1]),  # type: ignore
-                dx=0,
-                dy=home_row - row,
-                engram_id=int(id),
-            )
-            if finger not in per_finger:
-                per_finger[finger] = []
-            per_finger[finger].append(key)
-            kb_keys.append(key)
-        per_finger["L4"].reverse()
-        per_finger["R1"].reverse()
-        for hand in "LR":
-            for i, key in enumerate(per_finger[f"{hand}4"]):
-                key.dx = -i
-            for i, key in enumerate(per_finger[f"{hand}1"]):
-                key.dx = i
-    kb_keys.sort(key=lambda k: k.engram_id)
-    return kb_keys
-
-
-__kb_descr = KeyboardDescr(
-    fingers="""
-L4  L4  L4  L3  L2  L1  L1  R1  R1  R2  R3  R4  R4  R4
-L4   L4  L3  L2  L1  L1  R1  R1  R2  R3  R4  R4  R4  R4
-L4    L4* L3* L2* L1* L1  R1  R1* R2* R3* R4* R4  R4
-L4     L4  L3  L2  L1  L1  R1  R1  R2  R3  R4  R4
-L4   -   LT             RT            RT  -   -   -
-""".strip(),
-    engram_id="""
-- -  -  -  -  -  -  -  -  -  -  -  -  - 
-- 1  2  3  4  25 28 13 14 15 16 31 - - 
--  5  6  7  8  26 29 17 18 19 20 32 - 
--   9  10 11 12 27 30 21 22 23 24 - 
--  -  -          -         -  -  - -
-""".strip(),
-)  # HACK
-keys = main_keys(__kb_descr)  # HACK
-
-
-# > Comparison with original scoring
+# >  List of the original penalties  (condition-based rewrite)
 
 
 type KeyPenaltyCondition = Callable[[Key], bool]
 type PairPenaltyCondition = Callable[[Key, Key], bool]
 
-
+# ▾ Actually a parameter with no effect (not penalty computed)
 no_penalties: list[str] = ["adjacent_offset"]
 
 # ▼ Condition tested for each key of the bigram.
@@ -186,8 +145,11 @@ sym_pair_penalties: dict[str, PairPenaltyCondition] = {
     ),
 }
 
-# ▼ Knowingly ignored
+# ▼ Knowingly ignored penalties
 ignore_penalties: list[str] = ["shorter_above"]
+
+
+# >  Comparison with what the original code gives
 
 
 def penalty_application_str(flow_matrix: NDArray) -> str:
@@ -213,7 +175,7 @@ def application_mismatch_str(expected: NDArray, obtained: NDArray) -> str:
         d = [f"{i} "[k] for i in range(1, n + 1)]
         lines.append("   ".join(["".join(d)] * 3))
     d = [str(i)[0] for i in range(1, n + 1)]
-    return "\n".join(lines)
+    return "\033[0m" + "\n".join(lines)
 
 
 def expected_with_penalty(penalty: str) -> NDArray:
@@ -238,7 +200,7 @@ def check_key_penalties() -> None:
         s = np.array([[int(condition(k)) for k in keys]])
         s = s + s.T
         s = 0.5**s
-        assert np.array_equal(s, expected)
+        __assert_matrix_matching(s, expected, name=penalty)
 
 
 def check_pair_penalties() -> None:
@@ -249,18 +211,23 @@ def check_pair_penalties() -> None:
             if symmetry:
                 s += np.array([[int(condition(k1, k0)) for k1 in keys] for k0 in keys])
             s = 0.5**s
-            if not np.array_equal(s, expected):
-                assert np.array_equal(s[:24, :24], expected[:24, :24]), (
-                    f"{penalty}:\n\n{application_mismatch_str(expected, s)}"
-                )
-                descr = (
-                    "\n" + application_mismatch_str(expected, s)
-                    if _VERBOSE_WARNING
-                    else ""
-                )
-                print(
-                    f"\033[93m⚠ \033[92m{penalty}\033[93m: Mismatch for 32 keys\033[0m{descr}"
-                )
+            __assert_matrix_matching(s, expected, name=penalty)
+
+
+def __assert_matrix_matching(obtained: NDArray, expected: NDArray, name: str) -> None:
+    if not np.array_equal(obtained, expected):
+        assert np.array_equal(obtained[:24, :24], expected[:24, :24]), (
+            f"{name}:\n\n{application_mismatch_str(expected, obtained)}"
+        )
+        descr = (
+            "\n" + application_mismatch_str(expected, obtained)
+            if _VERBOSE_WARNING
+            else ""
+        )
+        print(
+            f"\033[93m⚠ \033[92m{name}\033[93m: "
+            + f"Mismatch for 32 keys (but not 24)\033[0m{descr}"
+        )
 
 
 def report_penalty_coverage() -> None:
@@ -288,22 +255,3 @@ if __name__ == "__main__":
     check_key_penalties()
     check_pair_penalties()
     report_penalty_coverage()
-
-"""
-Regarding mismatches with original 32×32 flow matrices:
-- outward:
-    Original implementation mistakenly ignored side keys.
-- skip_row_1away:
-    Original implementation mistakenly included 4↔27 (L1↑↔L1↘) and 13↔30 (R1↑↔R1↙)
-    (which are already included in skip_row_0away!),
-    instead of 4↔27 (L2↑↔L1↘) and 14↔30 (R2↑↔R1↙).
-- skip_row_2away:
-    Original implementation forgot 2↔27 (L3↑↔L1↘) and 15↔30 (R3↑↔R1↙)
-    (while 10↔25 (L3↓↔L1↗) and 23↔28 (R3↓↔R1↖) are included!).
-- skip_row_3away:
-    Original implementation forgot 1↔27 (L4↑↔L1↘)
-    (while 9↔25 (L4↓↔L1↗) and 16↔30 (R4↑↔R1↙) are included!).
-We also ignore:
-- shorter_above:
-    It is very badly defined, and covered through more accurate penalties.
-"""
