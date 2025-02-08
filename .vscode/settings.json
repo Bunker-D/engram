@@ -1,6 +1,7 @@
 {
 	"cSpell.words": [
 		"Antialiasing",
+		"argcount",
 		"bigram",
 		"dparam",
 		"freq",
@@ -17,7 +18,8 @@
 		"pyside",
 		"pytest",
 		"skipgram",
-		"Sofle"
+		"Sofle",
+		"varnames"
 	],
 	"files.exclude": {
 		".venv": false,

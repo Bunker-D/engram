@@ -1,0 +1,309 @@
+# ruff:noqa: E731
+from dataclasses import dataclass
+from typing import Callable, Literal, TypedDict
+
+import numpy as np
+from numpy.typing import NDArray
+from og_flow_matrix_code import create_32x32_flow_matrix as og_flow_matrix
+
+_REPORT_DISPLACEMENT: bool = False
+_VERBOSE_WARNING: bool = False
+
+
+@dataclass
+class Key:
+    hand: Literal["L", "R"]
+    finger: Literal[0, 1, 2, 3, 4]
+    dx: int
+    dy: int
+    engram_id: int
+
+    def __str__(self) -> str:
+        if _REPORT_DISPLACEMENT:
+            d = f"  ({self.dy},{self.dx})" if self.dy or self.dx else ""
+        else:
+            d = ""
+        return f"{self.engram_id:2}:  {self.hand}{self.finger}  {self.dir}{d}"
+
+    @property
+    def dir(self) -> str:
+        v_sign = self.__sign(self.dy)
+        h_sign = self.__sign(self.dx)
+        if self.hand == "R":
+            h_sign *= -1
+        return {
+            (+1,-1): "↖", (+1, 0): "↑", (+1,+1): "↗",
+            ( 0,-1): "←", ( 0, 0): "×", ( 0,+1): "→",
+            (-1,-1): "↙", (-1, 0): "↓", (-1,+1): "↘",
+        }[v_sign, h_sign]  # fmt: skip
+
+    @staticmethod
+    def __sign(n: int) -> Literal[-1, 0, 1]:
+        if n < 0:
+            return -1
+        if n > 0:
+            return 1
+        return 0
+
+
+class KeyboardDescr(TypedDict):
+    fingers: str
+    engram_id: str
+
+
+def main_keys(kb_descr: KeyboardDescr) -> list[Key]:  # HACK
+    kb_keys: list[Key] = []
+    ids = (
+        i
+        for line in kb_descr["engram_id"].strip().splitlines()
+        for i in line.strip().split()
+    )
+    fingers_descr = kb_descr["fingers"].strip().splitlines()
+    home_row = next(i for i, line in enumerate(fingers_descr) if "*" in line)
+    for row, fingers_line in enumerate(fingers_descr):
+        per_finger: dict[str, list[Key]] = {"L4": [], "L1": [], "R1": [], "R4": []}
+        for finger in fingers_line.strip().split():
+            id = next(ids)
+            if id == "-":
+                continue
+            finger = finger[:2]
+            key = Key(
+                hand=finger[0],  # type: ignore
+                finger="T1234".index(finger[1]),  # type: ignore
+                dx=0,
+                dy=home_row - row,
+                engram_id=int(id),
+            )
+            if finger not in per_finger:
+                per_finger[finger] = []
+            per_finger[finger].append(key)
+            kb_keys.append(key)
+        per_finger["L4"].reverse()
+        per_finger["R1"].reverse()
+        for hand in "LR":
+            for i, key in enumerate(per_finger[f"{hand}4"]):
+                key.dx = -i
+            for i, key in enumerate(per_finger[f"{hand}1"]):
+                key.dx = i
+    kb_keys.sort(key=lambda k: k.engram_id)
+    return kb_keys
+
+
+__kb_descr = KeyboardDescr(
+    fingers="""
+L4  L4  L4  L3  L2  L1  L1  R1  R1  R2  R3  R4  R4  R4
+L4   L4  L3  L2  L1  L1  R1  R1  R2  R3  R4  R4  R4  R4
+L4    L4* L3* L2* L1* L1  R1  R1* R2* R3* R4* R4  R4
+L4     L4  L3  L2  L1  L1  R1  R1  R2  R3  R4  R4
+L4   -   LT             RT            RT  -   -   -
+""".strip(),
+    engram_id="""
+- -  -  -  -  -  -  -  -  -  -  -  -  - 
+- 1  2  3  4  25 28 13 14 15 16 31 - - 
+-  5  6  7  8  26 29 17 18 19 20 32 - 
+-   9  10 11 12 27 30 21 22 23 24 - 
+-  -  -          -         -  -  - -
+""".strip(),
+)  # HACK
+keys = main_keys(__kb_descr)  # HACK
+
+
+# > Comparison with original scoring
+
+
+type KeyPenaltyCondition = Callable[[Key], bool]
+type PairPenaltyCondition = Callable[[Key, Key], bool]
+
+
+no_penalties: list[str] = ["adjacent_offset"]
+
+# ▼ Condition tested for each key of the bigram.
+#   Penalty applied twice if condition applies twice.
+key_penalties: dict[str, KeyPenaltyCondition] = {
+    "lateral": lambda k: k.dx != 0,
+    "not_home_row": lambda k: k.dy != 0,
+    "side_top": lambda k: k.dy > 0 and k.finger in [1, 4],
+    "inside_top": lambda k: k.finger == 1 and k.dy > 0,
+}
+
+# ▼ Condition tested for the bigram.
+pair_penalties: dict[str, PairPenaltyCondition] = {  # Same hand is assumed!
+    "outward": lambda k0, k1: k0.hand == k1.hand and k1.finger > k0.finger,
+    "same_hand": lambda k0, k1: k0.hand == k1.hand,
+    "skip_row_0away": lambda k0, k1: (
+        k0.hand == k1.hand and k0.finger == k1.finger and abs(k0.dy - k1.dy) > 1
+    ),
+    "skip_row_1away": lambda k0, k1: (
+        k0.hand == k1.hand
+        and abs(k0.finger - k1.finger) == 1
+        and abs(k0.dy - k1.dy) > 1
+    ),
+    "skip_row_2away": lambda k0, k1: (
+        k0.hand == k1.hand
+        and abs(k0.finger - k1.finger) == 2
+        and abs(k0.dy - k1.dy) > 1
+    ),
+    "skip_row_3away": lambda k0, k1: (
+        k0.hand == k1.hand
+        and abs(k0.finger - k1.finger) == 3
+        and abs(k0.dy - k1.dy) > 1
+    ),
+    "same_finger": lambda k0, k1: (
+        k0.hand == k1.hand and k0.finger == k1.finger and k0 != k1
+    ),
+}
+
+# ▼ Condition tested for the bigram and its reversion.
+#   Penalty applied twice if condition applies twice.
+sym_pair_penalties: dict[str, PairPenaltyCondition] = {
+    # ▲ Will be swapped too. Same hand is assumed!
+    "side_above_1away": lambda k0, k1: (
+        k0.hand == k1.hand
+        and (k0.finger, k1.finger) in ((1, 2), (4, 3))
+        # ▲ ⇔ k0.finger in [1, 4] and abs(k1.finger - k0.finger) == 1
+        and k0.dy > k1.dy
+    ),
+    "side_above_2away": lambda k0, k1: (
+        k0.hand == k1.hand
+        and (k0.finger, k1.finger) in ((1, 3), (4, 2))
+        # ▲ ⇔ k0.finger in [1, 4] and abs(k1.finger - k0.finger) == 2
+        and k0.dy > k1.dy
+    ),
+    "side_above_3away": lambda k0, k1: (
+        k0.hand == k1.hand and (k0.finger, k1.finger) == (1, 4) and k0.dy != k1.dy
+        # ⇔ k0.finger in [1, 4] and abs(k1.finger - k0.finger) == 3 and k0.dy > k1.dy
+    ),  # 💡 It's index and little finger. This rule is questionable.
+    "index_above": lambda k0, k1: (
+        k0.finger == 1
+        and k0.dy > 0
+        and (k1.hand != k0.hand or k0 == k1 or k1.dy < k0.dy)
+    ),
+    "middle_above_ring": lambda k0, k1: (
+        k0.hand == k1.hand and (k0.finger, k1.finger) == (2, 3) and k0.dy > k1.dy
+    ),  # 💡 Not an issue for me?
+    "ring_above_middle": lambda k0, k1: (
+        k0.hand == k1.hand and (k0.finger, k1.finger) == (2, 3) and k0.dy < k1.dy
+    ),
+}
+
+# ▼ Knowingly ignored
+ignore_penalties: list[str] = ["shorter_above"]
+
+
+def penalty_application_str(flow_matrix: NDArray) -> str:
+    """Return a string representing to which key pairs the penalty applies."""
+    char = lambda x: "·" if x == 1 else "█"
+    s: list[list[float]] = flow_matrix.tolist()  # type: ignore
+    return "\n".join("".join(map(char, line)) for line in s)
+
+
+def application_mismatch_str(expected: NDArray, obtained: NDArray) -> str:
+    applied_str: Callable[[float], str] = lambda x: "█" if x < 1 else "·"
+    diff_str: Callable[[float], str] = lambda x: (
+        "\033[42m+\033[0m" if x < 0 else "\033[41m-\033[0m" if x > 0 else "·"
+    )
+    exp: NDArray = np.vectorize(applied_str)(expected)
+    obt: NDArray = np.vectorize(applied_str)(obtained)
+    diff: NDArray = np.vectorize(diff_str)(obtained - expected)
+    n = exp.shape[1]
+    lines = [f"{'Expected:':{n}}   {'Got:':{n}}   {'Diff:':{n}}"]
+    for i, mat_lines in enumerate(zip(exp, obt, diff)):
+        lines.append(f"{'   '.join(''.join(line) for line in mat_lines)}   {i + 1}")
+    for k in [0, 1]:
+        d = [f"{i} "[k] for i in range(1, n + 1)]
+        lines.append("   ".join(["".join(d)] * 3))
+    d = [str(i)[0] for i in range(1, n + 1)]
+    return "\n".join(lines)
+
+
+def expected_with_penalty(penalty: str) -> NDArray:
+    og_flow_args = og_flow_matrix.__code__.co_varnames[
+        : og_flow_matrix.__code__.co_argcount
+    ]
+    args = {a: 1.0 for a in og_flow_args}
+    args[penalty] = 0.5
+    expected = og_flow_matrix(**args)
+    return expected
+
+
+def check_no_penalties() -> None:
+    for penalty in no_penalties:
+        expected = expected_with_penalty(penalty)
+        assert np.all(expected == 1)
+
+
+def check_key_penalties() -> None:
+    for penalty, condition in key_penalties.items():
+        expected = expected_with_penalty(penalty)
+        s = np.array([[int(condition(k)) for k in keys]])
+        s = s + s.T
+        s = 0.5**s
+        assert np.array_equal(s, expected)
+
+
+def check_pair_penalties() -> None:
+    for penalty_col, symmetry in ((pair_penalties, False), (sym_pair_penalties, True)):
+        for penalty, condition in penalty_col.items():
+            expected = expected_with_penalty(penalty)
+            s = np.array([[int(condition(k0, k1)) for k1 in keys] for k0 in keys])
+            if symmetry:
+                s += np.array([[int(condition(k1, k0)) for k1 in keys] for k0 in keys])
+            s = 0.5**s
+            if not np.array_equal(s, expected):
+                assert np.array_equal(s[:24, :24], expected[:24, :24]), (
+                    f"{penalty}:\n\n{application_mismatch_str(expected, s)}"
+                )
+                descr = (
+                    "\n" + application_mismatch_str(expected, s)
+                    if _VERBOSE_WARNING
+                    else ""
+                )
+                print(
+                    f"\033[93m⚠ \033[92m{penalty}\033[93m: Mismatch for 32 keys\033[0m{descr}"
+                )
+
+
+def report_penalty_coverage() -> None:
+    og_flow_args = og_flow_matrix.__code__.co_varnames[
+        : og_flow_matrix.__code__.co_argcount
+    ]
+    uncovered = set(og_flow_args)
+    for penalty_col in (
+        no_penalties,
+        key_penalties,
+        pair_penalties,
+        sym_pair_penalties,
+        ignore_penalties,
+    ):
+        uncovered -= set(penalty_col)
+    if not uncovered:
+        print("\nAll penalties covered. ✅\n")
+        return
+    print("\nUncovered penalties:\n" + "".join(f"   {p}\n" for p in uncovered))
+
+
+if __name__ == "__main__":
+    # _VERBOSE_WARNING = True
+    check_no_penalties()
+    check_key_penalties()
+    check_pair_penalties()
+    report_penalty_coverage()
+
+"""
+Regarding mismatches with original 32×32 flow matrices:
+- outward:
+    Original implementation mistakenly ignored side keys.
+- skip_row_1away:
+    Original implementation mistakenly included 4↔27 (L1↑↔L1↘) and 13↔30 (R1↑↔R1↙)
+    (which are already included in skip_row_0away!),
+    instead of 4↔27 (L2↑↔L1↘) and 14↔30 (R2↑↔R1↙).
+- skip_row_2away:
+    Original implementation forgot 2↔27 (L3↑↔L1↘) and 15↔30 (R3↑↔R1↙)
+    (while 10↔25 (L3↓↔L1↗) and 23↔28 (R3↓↔R1↖) are included!).
+- skip_row_3away:
+    Original implementation forgot 1↔27 (L4↑↔L1↘)
+    (while 9↔25 (L4↓↔L1↗) and 16↔30 (R4↑↔R1↙) are included!).
+We also ignore:
+- shorter_above:
+    It is very badly defined, and covered through more accurate penalties.
+"""
