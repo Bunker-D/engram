@@ -1,4 +1,4 @@
-from typing import Literal, NoReturn
+from typing import Literal
 
 # > Building key data from descriptions in YAML
 
@@ -6,46 +6,41 @@ from typing import Literal, NoReturn
 class Key:
     hand: Literal["L", "R"]
     finger: Literal[0, 1, 2, 3, 4]
-    h_dist: int
-    v_dist: int
+    dx: int  # horizontal distance from rest position, > 0 ⇔ inward
+    dy: int  # vertical   distance from rest position, > 0 ⇔ upward
 
-    def __init__(self, finger: str, h_dist: int, v_dist: int) -> None:
+    def __init__(self, finger: str, dx: int, dy: int) -> None:
         finger = finger.upper()
-        try:
-            self.hand = finger[0]  # type: ignore
-            assert self.hand in "LR"
-            self.finger = "T1234".index(finger[1])  # type: ignore
-        except (IndexError, AssertionError, ValueError):
-            self.__raise_invalid_finger(finger)
-        self.h_dist = h_dist
-        self.v_dist = v_dist
+        self.__assert_valid_finger(finger)
+        hand, finger, *_ = finger
+        self.hand = hand  # type: ignore
+        self.finger = "T1234".index(finger)  # type: ignore
+        self.dx = dx
+        self.dy = dy
 
     @staticmethod
-    def __raise_invalid_finger(finger: str) -> NoReturn:
-        raise ValueError(f"Invalid finger: {finger}")
-
-    def __post_init__(self) -> None:
-        pass
+    def __assert_valid_finger(finger: str) -> None:
+        finger = finger.upper()
+        if len(finger) < 2 or finger[0] not in "LR" or finger[1] not in "T1234":
+            raise ValueError(f"Invalid finger: {finger}")
 
     def __str__(self) -> str:
         return f"{self.hand}{self.finger or 'T'}{self.movement()}"
 
     def movement(self) -> str:
         movement = ""
-        y = self.v_dist
-        x = self.h_dist
+        y = self.dy
+        x = self.dx
         if self.hand == "R":
             x *= -1
         while y or x:
             x_sign = self.__sign(x)
             y_sign = self.__sign(y)
-            # fmt: off
             movement += {
                 (-1,+1): "↖", (0,+1): "↑", (+1,+1): "↗",
-                (-1, 0): "←", (0, 0): "●", (+1, 0): "→",
+                (-1, 0): "←",              (+1, 0): "→",
                 (-1,-1): "↙", (0,-1): "↓", (+1,-1): "↘",
-            }[x_sign, y_sign]
-            # fmt: on
+            }[x_sign, y_sign]  # fmt: skip
             x -= x_sign
             y -= y_sign
         return movement or "●"
@@ -180,7 +175,7 @@ class Key:
 #         k0.hand == k1.hand
 #         and (k0.finger, k1.finger) == (2, 3)
 #         and k0.v_dist > k1.v_dist
-#     ),  # 💡 Not an issue infor me?
+#     ),  # 💡 Not an issue for me?
 #     "ring_above_middle": lambda k0, k1: (
 #         k0.hand == k1.hand
 #         and (k0.finger, k1.finger) == (2, 3)

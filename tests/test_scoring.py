@@ -52,11 +52,11 @@ class Test_Key:
 
         def test_store_v_dist_and_h_dist(self) -> None:
             key = Key("L3", 5, 8)
-            assert key.h_dist == 5
-            assert key.v_dist == 8
-            key = Key("L3", h_dist=5, v_dist=8)
-            assert key.h_dist == 5
-            assert key.v_dist == 8
+            assert key.dx == 5
+            assert key.dy == 8
+            key = Key("L3", dx=5, dy=8)
+            assert key.dx == 5
+            assert key.dy == 8
 
     class Test_Str:
         @d_parametrize(
@@ -106,6 +106,6 @@ class Test_Key:
             self, finger: str, x: int, y: int, expected: str
         ) -> None:
             key = Key(finger, 0, 0)
-            key.h_dist = x
-            key.v_dist = y
+            key.dx = x
+            key.dy = y
             assert str(key) == expected
