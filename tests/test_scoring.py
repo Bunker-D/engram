@@ -1,7 +1,9 @@
+from typing import Callable, Generator
+
 import pytest
 from pytest_dparam import d_parametrize
 
-from engram.scoring import Key
+from engram.scoring import InterKeyPenalty, Key, KeyPenalty
 
 
 class Test_Key:
@@ -109,3 +111,74 @@ class Test_Key:
             key.dx = x
             key.dy = y
             assert str(key) == expected
+
+
+def all_keys() -> Generator[Key, None, None]:
+    for hand in "LR":
+        for dy in [-1, 0, 1, 2]:
+            for finger in "1234":
+                yield Key(hand + finger, 0, dy)
+            yield Key(hand + "1", 1, dy)
+            yield Key(hand + "4", -1, dy)
+
+
+class Test_KeyPenalty:
+    @staticmethod
+    def assert_same_condition(
+        condition_0: Callable[[Key], bool], condition_1: Callable[[Key], bool]
+    ) -> None:
+        for key in all_keys():
+            assert condition_0(key) == condition_1(key)
+
+    def test_applies(self) -> None:
+        def condition(key: Key) -> bool:
+            return key.hand == "R" and key.finger > 2 and key.dy > 0 and key.dx == 0
+
+        penalty = KeyPenalty(condition, 0)
+        self.assert_same_condition(penalty.applies, condition)
+
+
+class Test_InterKeyPenalty:
+    @staticmethod
+    def assert_same_condition(
+        condition_0: Callable[[Key, Key], bool], condition_1: Callable[[Key, Key], bool]
+    ) -> None:
+        for key_0 in all_keys():
+            for key_1 in all_keys():
+                assert condition_0(key_0, key_1) == condition_1(key_0, key_1)
+
+    def test_applies_raw_condition(self) -> None:
+        def condition(key_0: Key, key_1: Key) -> bool:
+            return key_1.finger == key_0.finger and key_1.dy - key_0.dy > 0
+
+        penalty = InterKeyPenalty(condition, 0, same_hand=False)
+        self.assert_same_condition(penalty.applies, condition)
+
+    def test_applies_same_hand(self) -> None:
+        def condition(key_0: Key, key_1: Key) -> bool:
+            return key_1.finger == key_0.finger and key_1.dy - key_0.dy > 0
+
+        def condition_same_hand(key_0: Key, key_1: Key) -> bool:
+            return (
+                key_0.hand == key_1.hand
+                and key_1.finger == key_0.finger
+                and key_1.dy - key_0.dy > 0
+            )
+
+        penalty = InterKeyPenalty(condition, 0)
+        self.assert_same_condition(penalty.applies, condition_same_hand)
+
+        penalty = InterKeyPenalty(condition, 0, same_hand=True)
+        self.assert_same_condition(penalty.applies, condition_same_hand)
+
+    def test_applies_symmetrical(self) -> None:
+        def condition(key_0: Key, key_1: Key) -> bool:
+            return key_1.finger == key_0.finger and key_1.dy - key_0.dy > 0
+
+        def symmetrical_condition(key_0: Key, key_1: Key) -> bool:
+            return condition(key_0, key_1) or condition(key_1, key_0)
+
+        penalty = InterKeyPenalty(condition, 0, symmetrical=True, same_hand=False)
+        self.assert_same_condition(penalty.applies, symmetrical_condition)
+
+    # TODO Test .applies
