@@ -18,6 +18,7 @@ gui = [
 
 [tool.ruff.lint]
 select = ["E", "F", "ANN"]
+ignore = ["E731"]
 
 [build-system]
 requires = ["hatchling"]
