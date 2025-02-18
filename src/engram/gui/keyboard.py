@@ -78,6 +78,7 @@ class W_Keyboard(QGraphicsView):
     keys: dict[Key, W_Key]
     __key_values: Callable[[Key], float] | None
     __pair_values: Callable[[Key, Key], float] | None
+    __max_value: float
     __active_key: Key | None
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -159,6 +160,13 @@ class W_Keyboard(QGraphicsView):
     ) -> None:
         self.__key_values = for_keys
         self.__pair_values = for_pairs
+        self.__max_value = max(for_keys(key) for key in self.keys)
+        if for_pairs:
+            pair_max = max(for_pairs(k, h) for k in self.keys for h in self.keys)
+            if pair_max > self.__max_value:
+                self.__max_value = pair_max
+        if not self.__max_value:
+            self.__max_value = 1
         self.update_shown_values()
 
     def update_shown_values(self) -> None:
@@ -171,7 +179,8 @@ class W_Keyboard(QGraphicsView):
         else:
             val_fun = self.__key_values or (lambda _: 0)
         for key, key_btn in self.keys.items():
-            key_btn.fill = val_fun(key)  # HACK Ignores rectangular keys
+            key_btn.fill = val_fun(key) / self.__max_value
+            # HACK ▲ Doesn't take into account rectangular keys
             key_btn.update()
 
 
@@ -199,9 +208,8 @@ if __name__ == "__main__":
 
     keyboard = main_widget.keyboard
     keyboard.set_values(
-        lambda k: (1 + abs(k.dx) + abs(k.dy)) / 5,
+        lambda k: (1 + abs(k.dx) + abs(k.dy)),
         lambda k, h: sqrt((k.finger - k.dx - h.finger + h.dx) ** 2 + (k.dy - h.dy) ** 2)
-        / 7
         if k.hand == h.hand
         else 0,
     )
