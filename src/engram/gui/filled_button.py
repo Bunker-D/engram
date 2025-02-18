@@ -3,7 +3,7 @@ from math import sqrt
 
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPaintEvent, QPalette
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QWidget
 
 
 class FillMode(Enum):
@@ -45,7 +45,8 @@ class FillMode(Enum):
 
 class W_FilledButton(QPushButton):
     fill: float
-    mode: FillMode
+    mode: FillMode = FillMode.CenterSize
+    # 💡 ▲ Shared option by default, but can be overwritten at instance level
 
     __corner_radius: int = 5
     __padding: int = 2
@@ -53,10 +54,11 @@ class W_FilledButton(QPushButton):
     def __init__(
         self,
         parent: QWidget | None = None,
-        mode: FillMode = FillMode.CenterSize,
+        mode: FillMode | None = None,
     ) -> None:
         super().__init__(parent)
-        self.mode = mode
+        if mode is not None:
+            self.mode = mode
         self.fill = 0
         self.setCheckable(True)
 
@@ -119,3 +121,27 @@ class W_FilledButton(QPushButton):
     @staticmethod
     def __color_selection() -> QColor:
         return QPalette().color(QPalette.ColorGroup.Active, QPalette.ColorRole.Text)
+
+
+class W_FillMode(QWidget):
+    modes: dict[FillMode, W_FilledButton]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.modes = {}
+        row = QHBoxLayout(self)
+        for mode in FillMode:
+            btn = W_FilledButton(mode=mode)
+            row.addWidget(btn)
+            btn.fill = 0.5
+            btn.setFixedSize(40, 40)
+            btn.clicked.connect(lambda _, mode=mode: self.__clicked_mode(mode))
+            self.modes[mode] = btn
+        self.modes[W_FilledButton.mode].setChecked(True)
+
+    def __clicked_mode(self, mode: FillMode) -> None:
+        self.modes[W_FilledButton.mode].setChecked(False)
+        W_FilledButton.mode = mode
+        self.modes[W_FilledButton.mode].setChecked(True)
+        for widget in QApplication.topLevelWidgets():
+            widget.update()

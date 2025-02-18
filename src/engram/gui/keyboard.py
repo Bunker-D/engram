@@ -2,9 +2,15 @@ from math import ceil, cos, radians, sin
 from typing import Callable
 
 from PySide6.QtGui import QTransform
-from PySide6.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QGraphicsScene,
+    QGraphicsView,
+    QVBoxLayout,
+    QWidget,
+)
 
-from engram.gui.filled_button import FillMode, W_FilledButton  # TODO  Relative import
+from engram.gui.filled_button import W_FilledButton, W_FillMode  # TODO  Relative import
 from engram.scoring import Key
 
 
@@ -24,9 +30,8 @@ class W_Key(W_FilledButton):
         a: float = 0,
         scene: QGraphicsScene | None = None,
         parent: QWidget | None = None,
-        mode: FillMode = FillMode.CenterSize,
     ) -> None:
-        super().__init__(parent=parent, mode=mode)
+        super().__init__(parent=parent)
         if scene:
             scene.addWidget(self)
         self.setPosition(x, y, w, h, a)
@@ -100,6 +105,7 @@ class W_Keyboard(QGraphicsView):
         y_ += [4.1347, 4.0, 4.1347, 4.38605, 4.64655]
         finger_ += ["T"] * 5
         h_dist_ += [-3, -2, -1, 0, 1]
+
         v_dist_ += [0] * 5
         a_ = [0.0] * (len(x_) - 2) + [22.8, 29.7]
         w_ = [1] * len(x_)
@@ -165,7 +171,7 @@ class W_Keyboard(QGraphicsView):
         else:
             val_fun = self.__key_values or (lambda _: 0)
         for key, key_btn in self.keys.items():
-            key_btn.fill = val_fun(key)
+            key_btn.fill = val_fun(key)  # HACK Ignores rectangular keys
             key_btn.update()
 
 
@@ -177,7 +183,21 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    keyboard = W_Keyboard()
+    class MainWidget(QWidget):
+        keyboard: W_Keyboard
+
+        def __init__(self) -> None:
+            super().__init__()
+            layout = QVBoxLayout(self)
+            self.keyboard = W_Keyboard()
+            layout.addWidget(self.keyboard)
+            layout.addWidget(W_FillMode())
+
+    window = EscapableWindow()
+    main_widget = MainWidget()
+    window.setCentralWidget(main_widget)
+
+    keyboard = main_widget.keyboard
     keyboard.set_values(
         lambda k: (1 + abs(k.dx) + abs(k.dy)) / 5,
         lambda k, h: sqrt((k.finger - k.dx - h.finger + h.dx) ** 2 + (k.dy - h.dy) ** 2)
@@ -185,9 +205,6 @@ if __name__ == "__main__":
         if k.hand == h.hand
         else 0,
     )
-
-    window = EscapableWindow()
-    window.setCentralWidget(keyboard)
 
     window.show()
     sys.exit(app.exec())
